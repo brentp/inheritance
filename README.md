@@ -1,6 +1,8 @@
 inheritance models for mendelian diseases
 -----------------------------------------
 
+[![Build Status](https://travis-ci.org/brentp/inheritance.svg?branch=master)](https://travis-ci.org/brentp/inheritance)
+
 This module is a general-purpose framework for evaluating if a family exihibits, for example, and autosomal dominant pattern.
 The logic for this was tuned in [gemini](https://github.com/arq5x/gemini) but we make it available here as a more general purpose library to encourage:
 1. community driven improvements

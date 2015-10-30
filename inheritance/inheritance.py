@@ -10,10 +10,17 @@ from collections import defaultdict, Counter
 import itertools as it
 import operator as op
 import re
+
 try:
     reduce
 except NameError:
     from functools import reduce
+
+try:
+    basestring
+except NameError:
+    basestring = str
+    unicode = str
 
 def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
     class Sample(object):

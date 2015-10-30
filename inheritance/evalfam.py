@@ -7,6 +7,13 @@ import atexit
 
 import itertools as it
 
+try:
+    basestring
+    ints = (int, long)
+except NameError:
+    basestring = str
+    ints = int
+
 def tmp(pedstr, suf=".ped"):
     t = tempfile.mktemp(suffix=suf)
     atexit.register(os.unlink, t)
@@ -19,7 +26,7 @@ def tmp(pedstr, suf=".ped"):
 
 class EvalFamily(object):
 
-    __slots__ = ('ped', 'family', 'gt_types', '_gt_types', 'gt_depths',
+    __slots__ = ('ped', 'family', '_gt_types',
                  '_gt_depths', 'strict', 'subjects')
 
     def __init__(self, family, fam_id=None, gt_types=None, gt_depths=None):
@@ -27,7 +34,7 @@ class EvalFamily(object):
         if isinstance(family, dict):
             if len(family) != 1:
                 raise Exception("only single families supported in EvalFamily")
-            family = family.values()[0]
+            family = next(iter(family.values()))
         self.family = family
         for s in self.family.subjects:
             if s.sample_id[0].isdigit(): s.sample_id = "s" + s.sample_id

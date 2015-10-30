@@ -157,11 +157,15 @@ valid_gts = (
     'gt_phred_ll_homalt',
 )
 
+try:
+    ints = (long, int)
+except NameError:
+    ints = (int,)
 
 class Filter(object):
     def __init__(self, sample_id, gt_field):
         self.gt_field = gt_field
-        if isinstance(sample_id, (long, int)):
+        if isinstance(sample_id, ints):
             self.sample0 = sample_id - 1
         else:
             self.sample0 = sample_id
