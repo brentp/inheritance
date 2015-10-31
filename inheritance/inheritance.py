@@ -154,7 +154,11 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
 
                     dad_allele = dad_bases[0]
                     mom_alleles = mom_bases
-                    mom_allele = next(m for m in mom_alleles if m != dad_allele)
+                    try:
+                        mom_allele = next(m for m in mom_alleles if m != dad_allele)
+                    except StopIteration:
+                        gt_phases[s._i] = False
+                        continue
 
                     gt_bases[s._i] = "%s|%s" % (mom_allele, dad_allele)
 
@@ -258,7 +262,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 else:
                     un = None
                 if unknowns and len(self.unknown):
-                    return af & un & reduce(op.and_, [s.gt_depths >= min_depth for s in self.unknown])
+                    return (af or True) & (un or True) & reduce(op.and_, [s.gt_depths >= min_depth for s in self.unknown])
                 return af & un
             else:
                 return None
@@ -552,7 +556,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             as we should know these anyway.
             """
             s = self.subjects[0]
-            HOM_REF, HET, HOM_ALT = HOM_REF, HET, HOM_ALT
+            HOM_REF, HET, HOM_ALT = self.HOM_REF, self.HET, self.HOM_ALT
             ref, alt = None, None
             for i, gt in enumerate(gt_types):
                 if gt == HOM_REF:
@@ -743,33 +747,49 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                      pattern_only=False):
 
             if pattern_only:
-                af, un = True, True
-                for kid in self.samples_with_parent:
-                    af |= (kid.gt_types == HET) & (kid.mom.gt_types != HOM_ALT) \
-                                                & (kid.dad.gt_types != HOM_ALT) \
-                                                & (kid.mom.gt_types != UNKNOWN) \
-                                                & (kid.dad.gt_types != UNKNOWN)
+                af, un = None, None
+                for i, kid in enumerate(self.samples_with_parent):
+
+                    icmp = (kid.gt_types == HET) & (kid.mom.gt_types != HOM_ALT) \
+                                                 & (kid.dad.gt_types != HOM_ALT) \
+                                                 & (kid.mom.gt_types != UNKNOWN) \
+                                                 & (kid.dad.gt_types != UNKNOWN)
+                    if i == 0:
+                        af = icmp
+                    else:
+                        af |= icmp
             else:
                 # all affecteds must be het at both sites
-                af = reduce(op.or_, [s.gt_types == HET for s in self.affecteds])
+                af = None
+                if len(self.affecteds):
+                    af = reduce(op.or_, [s.gt_types == HET for s in self.affecteds])
+
                 # no unaffected can be homozygous alt at either site.
+                un = None
                 if len(self.unaffecteds):
                     un = reduce(op.and_, [s.gt_types != HOM_ALT for s in self.unaffecteds])
-                else:
-                    un = None
+
                 for kid in self.samples_with_parent:
                     if not kid.affected: continue
                     un &= (kid.mom.gt_types != UNKNOWN)
                     un &= (kid.dad.gt_types != UNKNOWN)
 
                 if gt_ll:
-                    af &= reduce(op.and_, [s.gt_phred_ll_het <= gt_ll for s in
-                        self.affecteds])
-                    un = reduce(op.and_, [s.gt_phred_ll_homalt > gt_ll for s in
-                        self.unaffecteds], un)
+                    if len(self.affecteds):
+                        af &= reduce(op.and_, [s.gt_phred_ll_het <= gt_ll for s in
+                            self.affecteds])
+                    if len(self.unaffecteds):
+                        un = reduce(op.and_, [s.gt_phred_ll_homalt > gt_ll for s in
+                            self.unaffecteds], un)
 
+            res = None
+            if af is not None:
+                res = af
+            if un is not None:
+                res = (res & un) if res is not None else un
             depth = self._restrict_to_min_depth(min_depth)
-            res = af & un & depth
+            if depth is not None:
+                res = (res & depth) if res is not None else depth
             #if res is empty:
             #    return 'False'
             return res
