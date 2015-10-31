@@ -167,3 +167,14 @@ def test_comphet_pair():
     res = efam.comp_het()
     assert not res
 
+
+def test_comphet_pattern():
+    fam = make_fam2()
+    efam = EvalFamily(fam)
+    assert [f.affected for f in efam.subjects] == [False, True, True, False, True, False]
+    gt_types1 = [Family.HOM_REF, Family.HET, Family.HET, Family.HOM_REF, Family.HET, Family.HOM_REF]
+    gt_types2 = [Family.HOM_REF, Family.HET, Family.HET, Family.HOM_REF, Family.HET, Family.HOM_REF]
+    efam.gt_types = gt_types1
+    gt_bases1 = ["A/C", "A/A", "A/C", "A/A", "A/A", "A/C", "A/A"]
+    gt_bases2 = ["A/C", "A/A", "A/C", "A/A", "A/A", "A/C", "A/A"]
+    res = efam.comp_het_pair(gt_types1, gt_bases1, gt_types2, gt_bases2)
