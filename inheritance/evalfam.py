@@ -30,6 +30,7 @@ class EvalFamily(object):
                  '_gt_phred_ll_homref',
                  '_gt_phred_ll_het',
                  '_gt_phred_ll_homalt',
+                 '_gt_quals',
                  '_gt_depths', 'strict', 'subjects')
 
     def __init__(self, family, fam_id=None, gt_types=None, gt_depths=None):
@@ -48,6 +49,7 @@ class EvalFamily(object):
         self._gt_depths = None
         self.gt_depths = gt_depths
         self._gt_phred_ll_homalt = self._gt_phred_ll_homref = self._gt_phred_ll_het = None
+        self._gt_quals = None
 
     def draw(self, tests=('auto_rec', 'auto_dom')):
         from IPython.display import Image, display
@@ -105,6 +107,16 @@ class EvalFamily(object):
             self._gt_types = gt_types
 
     @property
+    def gt_quals(self):
+        return self._gt_quals
+
+    @gt_quals.setter
+    def gt_quals(self, gt_quals):
+        if gt_quals is not None:
+            assert len(gt_quals) == len(self.family)
+            self._gt_quals = gt_quals
+
+    @property
     def gt_depths(self):
         return self._gt_depths
 
@@ -159,6 +171,7 @@ class EvalFamily(object):
             if debug:
                 print(flt, file=sys.stderr)
             env['gt_types'] = self.gt_types
+            env['gt_quals'] = self.gt_quals
             env['gt_depths'] = self.gt_depths
             env['gt_phred_ll_homref'] = self.gt_phred_ll_homref
             env['gt_phred_ll_het'] = self.gt_phred_ll_het

@@ -26,6 +26,7 @@ def make_fam(n_affecteds, n_unaffecteds, n_unknowns, id="xxx"):
     fam.gt_phred_ll_homref = [random.randrange(0, 100) for _ in range(len(samples))]
     fam.gt_phred_ll_het = [random.randrange(0, 100) for _ in range(len(samples))]
     fam.gt_phred_ll_homalt = [random.randrange(0, 100) for _ in range(len(samples))]
+    fam.gt_quals = [random.randrange(5, 100) for _ in range(len(samples))]
     return fam
 
 def test_fuzz():
@@ -37,18 +38,20 @@ def test_fuzz():
         f = make_fam(n_affecteds, n_unaffecteds, n_unknowns, str(i))
 
         for min_depth in (0, 100):
-            for only_affected in (True, False):
-                for gt_ll in (False, 0, 10):
-                    for strict in (True, False):
+            for min_gq in (0, 10):
+                for only_affected in (True, False):
+                    for gt_ll in (False, 0, 10):
+                        for strict in (True, False):
 
-                        f.auto_rec(min_depth=min_depth, only_affected=only_affected, strict=strict, gt_ll=gt_ll)
-                        f.auto_dom(min_depth=min_depth, only_affected=only_affected, strict=strict, gt_ll=gt_ll)
-                        f.de_novo(min_depth=min_depth, only_affected=only_affected, strict=strict, gt_ll=gt_ll)
+                            f.auto_rec(min_depth=min_depth, only_affected=only_affected, strict=strict, gt_ll=gt_ll, min_gq=min_gq)
+                            f.auto_dom(min_depth=min_depth, only_affected=only_affected, strict=strict, gt_ll=gt_ll, min_gq=min_gq)
+                            f.de_novo(min_depth=min_depth, only_affected=only_affected, strict=strict, gt_ll=gt_ll, min_gq=min_gq)
 
-                    f.comp_het(min_depth=min_depth, only_affected=only_affected)
-                    f.comp_het(min_depth=min_depth, only_affected=only_affected, pattern_only=True)
-                    f.mendel_plausible_denovo(min_depth=min_depth, gt_ll=gt_ll, only_affected=only_affected)
-                    f.mendel_implausible_denovo(min_depth=min_depth, gt_ll=gt_ll, only_affected=only_affected)
-                    f.mendel_uniparental_disomy(min_depth=min_depth, gt_ll=gt_ll, only_affected=only_affected)
-                    f.mendel_LOH(min_depth=min_depth, gt_ll=gt_ll, only_affected=only_affected)
+                        f.comp_het(min_depth=min_depth, only_affected=only_affected, min_gq=min_gq)
+                        f.comp_het(min_depth=min_depth, only_affected=only_affected, pattern_only=True, min_gq=min_gq)
+
+                        f.mendel_plausible_denovo(min_depth=min_depth, gt_ll=gt_ll, only_affected=only_affected, min_gq=min_gq)
+                        f.mendel_implausible_denovo(min_depth=min_depth, gt_ll=gt_ll, only_affected=only_affected, min_gq=min_gq)
+                        f.mendel_uniparental_disomy(min_depth=min_depth, gt_ll=gt_ll, only_affected=only_affected, min_gq=min_gq)
+                        f.mendel_LOH(min_depth=min_depth, gt_ll=gt_ll, only_affected=only_affected, min_gq=min_gq)
 

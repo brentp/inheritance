@@ -276,7 +276,24 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             else:
                 return None
 
-        def auto_dom(self, min_depth=0, gt_ll=False, strict=True, only_affected=True):
+        def _restrict_to_min_gq(self, min_gq, unknowns=False):
+            if min_gq is None or min_gq <= 0:
+                return None
+
+            if len(self.affecteds):
+                af = reduce(op.and_, [s.gt_quals >= min_gq for s in self.affecteds])
+            else:
+                af = None
+            if len(self.unaffecteds):
+                un = reduce(op.and_, [s.gt_quals >= min_gq for s in self.unaffecteds])
+            else:
+                un = None
+            if unknowns and len(self.unknown):
+                return combine_and(reduce(op.and_, [s.gt_quals >= min_gq for s in self.unknown]), af, un)
+            return combine_and(af, un)
+
+        def auto_dom(self, min_depth=0, gt_ll=False, strict=True,
+                only_affected=True, min_gq=0):
             """
             If strict then all affected kids must have at least 1 affected parent.
             parent.
@@ -292,6 +309,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             else:
                 un = None
             depth = self._restrict_to_min_depth(min_depth)
+            quals = self._restrict_to_min_gq(min_gq)
             if gt_ll:
                 if len(self.affecteds):
                     af = reduce(op.and_, [s.gt_phred_ll_het <= gt_ll for s in self.affecteds]) & af
@@ -325,9 +343,10 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             if not kid_with_parents:
                 if len(self.affecteds) > 0:
                     sys.stderr.write("WARNING: using affected without parents for family %s for autosomal dominant test. Use strict to prevent this.\n" % self.family_id)
-            return combine_and(af, un, depth)
+            return combine_and(af, un, depth, quals)
 
-        def auto_rec(self, min_depth=0, gt_ll=False, strict=True, only_affected=True):
+        def auto_rec(self, min_depth=0, gt_ll=False, strict=True,
+                only_affected=True, min_gq=0):
             """
             If strict, then if parents exist, they must be het for all affecteds
             """
@@ -357,6 +376,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                                 "%s where no affected has parents\n" % self.family_id)
 
             depth = self._restrict_to_min_depth(min_depth)
+            quals = self._restrict_to_min_gq(min_gq)
             if gt_ll:
                 af &= reduce(op.and_, [s.gt_phred_ll_homalt <= gt_ll for s in
                                        self.affecteds])
@@ -364,9 +384,10 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                     un &= reduce(op.and_, [s.gt_phred_ll_homalt > gt_ll for s in
                                            self.unaffecteds])
 
-            return combine_and(af, un, depth)
+            return combine_and(af, un, depth, quals)
 
-        def de_novo(self, min_depth=0, gt_ll=False, strict=True, only_affected=True):
+        def de_novo(self, min_depth=0, gt_ll=False, strict=True,
+                only_affected=True, min_gq=0):
             """
             all affected must be het.
             all unaffected must be homref.
@@ -412,15 +433,17 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 return "False"
 
             depth = self._restrict_to_min_depth(min_depth)
+            quals = self._restrict_to_min_gq(min_gq)
             if strict:
                 # if a parent is affected it's not de novo.
                 for kid in self.affecteds:
                     for parent in (kid.mom, kid.dad):
                         if parent is not None and parent.affected:
                             return 'False'
-            return combine_and(af, un, depth)
+            return combine_and(af, un, depth, quals)
 
-        def mendel_plausible_denovo(self, min_depth=0, gt_ll=False, only_affected=False):
+        def mendel_plausible_denovo(self, min_depth=0, gt_ll=False,
+                only_affected=False, min_gq=0):
             """
             kid == HET and dad, mom == HOM_REF or dad, mom == HOM_ALT
             only use kids with both parents present.
@@ -432,6 +455,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             if len(subset) == 0: return 'False'
 
             depth = self._restrict_to_min_depth(min_depth, unknowns=not only_affected)
+            quals = self._restrict_to_min_gq(min_gq, unknowns=not only_affected)
             # join exprs by or. so just look for any kid that meets these within a family.
             exprs = []
             for s in subset:
@@ -445,9 +469,10 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 if gt_ll:
                     expr &= (s.gt_phred_ll_het <= gt_ll) & (s.mom.gt_phred_ll_homalt <= gt_ll) & (s.dad.gt_phred_ll_homalt <= gt_ll)
                 exprs.append(expr)
-            return combine_and(reduce(op.or_, exprs), depth)
+            return combine_and(reduce(op.or_, exprs), depth, quals)
 
-        def mendel_implausible_denovo(self, min_depth=0, gt_ll=False, only_affected=False):
+        def mendel_implausible_denovo(self, min_depth=0, gt_ll=False,
+                only_affected=False, min_gq=0):
             # everyone is homozygote. kid is opposit of parents.
             # only use kids with both parents present.
             if only_affected:
@@ -457,6 +482,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             if len(subset) == 0: return 'False'
 
             depth = self._restrict_to_min_depth(min_depth, unknowns=not only_affected)
+            quals = self._restrict_to_min_gq(min_gq, unknowns=not only_affected)
             exprs = []
             for s in subset:
                 # kid hom_alt, parents hom_ref
@@ -469,10 +495,10 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 if gt_ll:
                     expr &= (s.gt_phred_ll_homref <= gt_ll) & (s.mom.gt_phred_ll_homalt <= gt_ll) & (s.dad.gt_phred_ll_homalt <= gt_ll)
                 exprs.append(expr)
-            return combine_and(reduce(op.or_, exprs), depth)
+            return combine_and(reduce(op.or_, exprs), depth, quals)
 
         def mendel_uniparental_disomy(self, min_depth=0, gt_ll=False,
-                                      only_affected=False):
+                                      only_affected=False, min_gq=0):
             # parents are opposite homs, kid matches one of them (but should be
             # het).
             if only_affected:
@@ -481,6 +507,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 subset = self.samples_with_parent
             if len(subset) == 0: return 'False'
             depth = self._restrict_to_min_depth(min_depth, unknowns=not only_affected)
+            quals = self._restrict_to_min_gq(min_gq, unknowns=not only_affected)
 
             # join exprs with or
             exprs = []
@@ -506,9 +533,10 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                         expr &= (s.dad.gt_phred_ll_homref <= gt_ll) & (s.mom.gt_phred_ll_homalt <= gt_ll)
                     exprs.append(expr)
 
-            return combine_and(reduce(op.or_, exprs), depth)
+            return combine_and(reduce(op.or_, exprs), depth, quals)
 
-        def mendel_LOH(self, min_depth=0, gt_ll=False, only_affected=False):
+        def mendel_LOH(self, min_depth=0, gt_ll=False, only_affected=False,
+                min_gq=0):
             # kid and one parent are opposite homozygotes other parent is het.
             if only_affected:
                 subset = self.affecteds_with_parent
@@ -517,6 +545,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             if len(subset) == 0: return 'False'
 
             depth = self._restrict_to_min_depth(min_depth, unknowns=not only_affected)
+            quals = self._restrict_to_min_gq(min_gq, unknowns=not only_affected)
             exprs = []  # joined with or
             for s in subset:
                 # kid hom_alt, mom hom_ref, dad het.
@@ -543,20 +572,25 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                     e &= (s.gt_phred_ll_homref <= gt_ll) & (s.mom.gt_phred_ll_homalt <= gt_ll) & (s.dad.gt_phred_ll_het <= gt_ll)
                 exprs.append(e)
 
-            return combine_and(reduce(op.or_, exprs), depth)
+            return combine_and(reduce(op.or_, exprs), depth, quals)
 
-        def mendel_violations(self, min_depth=0, gt_ll=False, only_affected=False):
+        def mendel_violations(self, min_depth=0, gt_ll=False,
+                              only_affected=False, min_gq=0):
             return {'plausible de novo': self.mendel_plausible_denovo(min_depth,
                                                                       gt_ll,
-                                                                      only_affected),
+                                                                      only_affected,
+                                                                      min_gq=min_gq),
                     'implausible de novo': self.mendel_implausible_denovo(min_depth,
                                                                           gt_ll,
-                                                                          only_affected),
+                                                                          only_affected,
+                                                                          min_gq=min_gq),
                     'uniparental disomy': self.mendel_uniparental_disomy(min_depth,
                                                                          gt_ll,
-                                                                         only_affected),
+                                                                         only_affected,
+                                                                         min_gq=min_gq),
                     'loss of heterozygosity': self.mendel_LOH(min_depth, gt_ll,
-                                                              only_affected)
+                                                              only_affected,
+                                                              min_gq=min_gq)
                     }
 
         def _get_ref_alt(self, gt_types, gt_bases,
@@ -754,7 +788,8 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
 
         def comp_het(self, min_depth=0, gt_ll=False,
                      only_affected=True,
-                     pattern_only=False):
+                     pattern_only=False,
+                     min_gq=0):
 
             if pattern_only:
                 af, un = None, None
@@ -792,17 +827,9 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                         un = reduce(op.and_, [s.gt_phred_ll_homalt > gt_ll for s in
                             self.unaffecteds], un)
 
-            res = None
-            if af is not None:
-                res = af
-            if un is not None:
-                res = (res & un) if res is not None else un
             depth = self._restrict_to_min_depth(min_depth)
-            if depth is not None:
-                res = (res & depth) if res is not None else depth
-            #if res is empty:
-            #    return 'False'
-            return res
+            quals = self._restrict_to_min_gq(min_gq)
+            return combine_and(af, un, depth, quals)
 
     Family.HOM_REF, Family.HET, Family.UNKNOWN, Family.HOM_ALT = HOM_REF, HET, UNKNOWN, HOM_ALT
     return Sample, Family
