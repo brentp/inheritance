@@ -780,8 +780,8 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
 
                 for kid in self.samples_with_parent:
                     if not kid.affected: continue
-                    un &= (kid.mom.gt_types != UNKNOWN)
-                    un &= (kid.dad.gt_types != UNKNOWN)
+                    un = (kid.mom.gt_types != UNKNOWN) & un
+                    un = (kid.dad.gt_types != UNKNOWN) & un
 
                 if gt_ll:
                     if len(self.affecteds):

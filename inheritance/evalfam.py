@@ -118,7 +118,7 @@ class EvalFamily(object):
                 assert self._gt_depths is not None
             debug = kwargs.pop('debug', False)
             flt = getattr(self.family, gt)(*args, **kwargs)
-            if flt is False:
+            if flt is False or flt is None:
                 return False
             if gt == "comp_het_pair":
                 return flt
@@ -130,7 +130,7 @@ class EvalFamily(object):
             try:
                 return eval(flt, env)
             except:
-                print(flt)
+                print("attempted eval:", flt)
                 raise
         return func
 
