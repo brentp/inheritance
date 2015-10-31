@@ -27,6 +27,9 @@ def tmp(pedstr, suf=".ped"):
 class EvalFamily(object):
 
     __slots__ = ('ped', 'family', '_gt_types',
+                 '_gt_phred_ll_homref',
+                 '_gt_phred_ll_het',
+                 '_gt_phred_ll_homalt',
                  '_gt_depths', 'strict', 'subjects')
 
     def __init__(self, family, fam_id=None, gt_types=None, gt_depths=None):
@@ -44,6 +47,7 @@ class EvalFamily(object):
         self.gt_types = gt_types
         self._gt_depths = None
         self.gt_depths = gt_depths
+        self._gt_phred_ll_homalt = self._gt_phred_ll_homref = self._gt_phred_ll_het = None
 
     def draw(self, tests=('auto_rec', 'auto_dom')):
         from IPython.display import Image, display
@@ -110,9 +114,38 @@ class EvalFamily(object):
             assert len(gt_depths) == len(self.family)
             self._gt_depths = gt_depths
 
+    @property
+    def gt_phred_ll_homref(self):
+        return self._gt_phred_ll_homref
+
+    @gt_phred_ll_homref.setter
+    def gt_phred_ll_homref(self, gt_phred_ll_homref):
+        if gt_phred_ll_homref is not None:
+            assert len(gt_phred_ll_homref) == len(self.family)
+            self._gt_phred_ll_homref = gt_phred_ll_homref
+
+    @property
+    def gt_phred_ll_homalt(self):
+        return self._gt_phred_ll_homalt
+
+    @gt_phred_ll_homalt.setter
+    def gt_phred_ll_homalt(self, gt_phred_ll_homalt):
+        if gt_phred_ll_homalt is not None:
+            assert len(gt_phred_ll_homalt) == len(self.family)
+            self._gt_phred_ll_homalt = gt_phred_ll_homalt
+
+    @property
+    def gt_phred_ll_het(self):
+        return self._gt_phred_ll_het
+
+    @gt_phred_ll_het.setter
+    def gt_phred_ll_het(self, gt_phred_ll_het):
+        if gt_phred_ll_het is not None:
+            assert len(gt_phred_ll_het) == len(self.family)
+            self._gt_phred_ll_het = gt_phred_ll_het
 
     def __getattr__(self, gt):
-        assert self._gt_types
+        assert self._gt_types is not None
         def func(*args, **kwargs):
             if 'min_depth' in kwargs:
                 assert self._gt_depths is not None
@@ -127,6 +160,9 @@ class EvalFamily(object):
                 print(flt, file=sys.stderr)
             env['gt_types'] = self.gt_types
             env['gt_depths'] = self.gt_depths
+            env['gt_phred_ll_homref'] = self.gt_phred_ll_homref
+            env['gt_phred_ll_het'] = self.gt_phred_ll_het
+            env['gt_phred_ll_homalt'] = self.gt_phred_ll_homalt
             try:
                 return eval(flt, env)
             except:
