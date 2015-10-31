@@ -89,7 +89,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                     s._i = i
 
         @classmethod
-        def from_ped(klass, ped):
+        def from_ped(klass, ped, order=None):
             """
             return a dict keyed by family_id with parent/kid relations defined from a ped file.
             """
@@ -104,7 +104,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 for toks in (l.rstrip().split() for l in fh if l[0] != "#"):
                     toks.append(toks[1]) # name
                     yield toks
-            return klass._from_gen(agen())
+            return klass._from_gen(agen(), order=order)
 
         def __len__(self):
             return len(self.subjects)
@@ -198,7 +198,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             return klass._from_gen(agen())
 
         @classmethod
-        def _from_gen(klass, gen):
+        def _from_gen(klass, gen, order=None):
             fams = defaultdict(dict)
             pheno_lookup = {'1': False, '2': True}
             gender_lookup = {'1': 'male', '2': 'female'}
@@ -213,7 +213,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 # sample_id in gemini si the primary key
                 s.name = name
                 s.family_id = fam_id
-                s._i = i
+                s._i = i if order is None else order[name]
 
             ofams = {}
             for fam_id, fam_dict in fams.items():
@@ -293,7 +293,8 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 un = None
             depth = self._restrict_to_min_depth(min_depth)
             if gt_ll:
-                af = reduce(op.and_, [s.gt_phred_ll_het <= gt_ll for s in self.affecteds]) & af
+                if len(self.affecteds):
+                    af = reduce(op.and_, [s.gt_phred_ll_het <= gt_ll for s in self.affecteds]) & af
                 if len(self.unaffecteds) and only_affected:
                     un = reduce(op.and_, [s.gt_phred_ll_het > gt_ll for s in
                                            self.unaffecteds]) & un
