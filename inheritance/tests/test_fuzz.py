@@ -11,7 +11,7 @@ def make_fam(n_affecteds, n_unaffecteds, n_unknowns, id="xxx"):
     for i in range(n_unknowns):
         samples.append(Sample('unknown_%d' % i, affected=None))
 
-    for i in range((n_affecteds + n_affecteds + n_unknowns)/ 4):
+    for i in range(int((n_affecteds + n_affecteds + n_unknowns)/ 4)):
 
         sample = random.choice(samples)
         if random.random() < 0.85:
