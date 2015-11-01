@@ -3,7 +3,7 @@ python:
   - "2.7"
   - "3.3"
   - "3.4"
-script: python setup.py test
+script: python setup.py test | uniq -c
 
 install:
   - pip install -e .
