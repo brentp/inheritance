@@ -22,6 +22,9 @@ except NameError:
     basestring = str
     unicode = str
 
+def fix_sample_name(s):
+    return s.replace("-", "_").replace(" ", "_")
+
 def combine_and(*args):
     args = [a for a in args if not (a is True or a is None)]
     if any(a is False for a in args): return False
@@ -100,8 +103,11 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 fh = io.StringIO(unicode(ped))
             else:
                 fh = ped
+            if order is not None:
+                order = {fix_sample_name(k): v for k, v in order.items()}
             def agen():
                 for toks in (l.rstrip().split() for l in fh if l[0] != "#"):
+                    toks[1] = fix_sample_name(toks[1])
                     toks.append(toks[1]) # name
                     yield toks
             return klass._from_gen(agen(), order=order)
@@ -712,10 +718,14 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             gt_bases2 = [b.split("|" if p else "/") for b, p in zip(gt_bases2, gt_phases2)]
 
             # get in (0, 1) format instead of (A, T)
-            ra = {ref1: 0, alt1: 1, ".": 2}
-            gt_nums1 = [(ra[b[0]], ra[b[1]]) for b in gt_bases1]
-            ra = {ref2: 0, alt2: 1, ".": 2}
-            gt_nums2 = [(ra[b[0]], ra[b[1]]) for b in gt_bases2]
+            try:
+                ra = {ref1: 0, alt1: 1, ".": 2}
+                gt_nums1 = [(ra[b[0]], ra[b[1]]) for b in gt_bases1]
+                ra = {ref2: 0, alt2: 1, ".": 2}
+                gt_nums2 = [(ra[b[0]], ra[b[1]]) for b in gt_bases2]
+            except KeyError:
+                sys.stderr.write("can't phase sites with multiple alternate alleles\n")
+                return {'candidate': False}
 
             if pattern_only:
                 return self._comp_het_pair_pattern(gt_types1, gt_nums1,
