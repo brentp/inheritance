@@ -167,7 +167,6 @@ def test_comphet_pair():
     res = efam.comp_het()
     assert not res
 
-
 def test_comphet_pattern():
     fam = make_fam2()
     efam = EvalFamily(fam)
@@ -178,3 +177,46 @@ def test_comphet_pattern():
     gt_bases1 = ["A/C", "A/A", "A/C", "A/A", "A/A", "A/C", "A/A"]
     gt_bases2 = ["A/C", "A/A", "A/C", "A/A", "A/A", "A/C", "A/A"]
     res = efam.comp_het_pair(gt_types1, gt_bases1, gt_types2, gt_bases2)
+
+def test_comp_het_priority():
+
+    fam = make_fam1()
+    efam = EvalFamily(fam)
+    assert [f.affected for f in efam.subjects] == [False, False, True, False, False, False]
+    gt_types1 = [Family.HOM_REF, Family.HET, Family.HET, Family.HOM_REF, Family.HET, Family.HOM_REF]
+    gt_types2 = [Family.HET, Family.HOM_REF, Family.HET, Family.HOM_REF, Family.HOM_REF, Family.HOM_REF]
+    gt_bases1 = ["A/A", "A/C", "A/C", "A/A", "A/A", "A/C", "A/A"]
+    gt_bases2 = ["A/C", "A/A", "A/C", "A/A", "A/A", "A/A", "A/A"]
+    gt_phases = [False] * len(gt_bases2)
+    efam.gt_types = gt_types1
+
+    res = efam.comp_het_pair(gt_types1, gt_bases1, gt_types2, gt_bases2,
+                             gt_phases, gt_phases, "A", "C", "A", "C")
+    assert res['candidate'] is True, res
+    assert res['priority'] == 1
+
+def test_comp_het_singleton():
+    kid = Sample('kid', affected=True)
+
+    efam = EvalFamily(Family([kid], 'singleton'))
+    efam.gt_types = [Family.HET]
+
+    res = efam.comp_het_pair([Family.HET], ["A/C"], [Family.HET], ["A/C"],
+            [False], [False], "A", "C", "A", "C")
+
+    assert res['candidate']
+    assert res['priority'] == 2, res
+
+
+def test_comp_het_all_hets():
+
+    efam = EvalFamily(Family([dad, mom, kid], 'triox'))
+
+    efam.gt_types = [Family.HET] * 3
+
+    res = efam.comp_het_pair([Family.HET] * 3, ["A/C"] * 3,
+                             [Family.HET] * 3, ["A/C"] * 3,
+            [False] * 3, [False] * 3, "A", "C", "A", "C")
+
+    assert res['candidate']
+    assert res['priority'] == 3

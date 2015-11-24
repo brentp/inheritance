@@ -697,6 +697,12 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             This further checks that a give pair is comp_het.
 
             if pattern_only is False, affected/unaffected status is ignored.
+            A priority is returned such that:
+            1. It's a true, canonical compound het where everyone is phased (or
+               it's unambiguous
+            2. It's a singleton (phased or unphased) sample with no parents
+            3. It's an unphased sample and unphased parents where all are hets
+               at the pair.
             """
             if gt_phases1 is None:
                 gt_phases1 = ["|" in b for b in gt_bases1]
@@ -785,15 +791,18 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                             if fast_mode: break
                     else:
                         ret['unaffected_unphased'].append(un)
-
             if not 'candidate' in ret:
                 ret['candidate'] = False
                 ret['priority'] = None
             elif ret['candidate']:
 
-                ret['priority'] = 2
+                ret['priority'] = 3
                 if len(ret['affected_phased']) and len(ret['unaffected_unphased']) == 0:
                     ret['priority'] = 1
+                    # priority 2 for a single unphased affected.
+                elif len(ret['affected_unphased']) and len(ret['unaffected_unphased']) == 0:
+                    ret['priority'] = 2
+
             return ret
 
         def comp_het(self, min_depth=0, gt_ll=False,
