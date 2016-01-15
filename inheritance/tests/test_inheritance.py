@@ -195,6 +195,22 @@ def test_comp_het_priority():
     assert res['candidate'] is True, res
     assert res['priority'] == 1
 
+def test_comp_het_missing():
+
+    fam = make_fam1()
+    efam = EvalFamily(fam)
+    assert [f.affected for f in efam.subjects] == [False, False, True, False, False, False]
+    gt_types1 = [Family.HOM_REF, Family.HET, Family.HET, Family.HOM_REF, Family.HET, Family.HOM_REF]
+    gt_types2 = [Family.HET, Family.HOM_REF, Family.HET, Family.HOM_REF, Family.HOM_REF, Family.HOM_REF]
+    gt_bases1 = ["A/A", "A/C", ".", "A/A", "A/A", "A/C", "A/A"]
+    gt_bases2 = ["A/C", "A/A", "A/C", "A/A", "A/A", "A/A", "A/A"]
+    gt_phases = [False] * len(gt_bases2)
+    efam.gt_types = gt_types1
+
+    res = efam.comp_het_pair(gt_types1, gt_bases1, gt_types2, gt_bases2,
+                             gt_phases, gt_phases, "A", "C", "A", "C")
+    assert res['candidate'] is False, res
+
 def test_comp_het_singleton():
     kid = Sample('kid', affected=True)
 

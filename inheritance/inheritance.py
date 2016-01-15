@@ -732,6 +732,9 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             except KeyError:
                 sys.stderr.write("can't phase sites with multiple alternate alleles\n")
                 return {'candidate': False}
+            except IndexError:
+                # alternate is unknown, e.g. "A/."
+                return {'candidate': False}
 
             if pattern_only:
                 return self._comp_het_pair_pattern(gt_types1, gt_nums1,
