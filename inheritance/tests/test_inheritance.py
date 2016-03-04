@@ -36,6 +36,12 @@ def make_fam2():
 
 
 
+def test_sex():
+    import sys
+    f = make_fam1().values()[0]
+    assert [s.sample_id for s in f.males] == ['dad', 'kid', 'kid2', 'grandpa'], f.males
+    assert [s.sample_id for s in f.females] == ['mom', 'grandma'], f.males
+
 def test_fam():
     assert fam.subjects == [mom, dad, kid]
 
@@ -61,6 +67,45 @@ def test_auto_rec():
 
     efam.gt_types = [Family.HET, Family.HET, Family.HET]
     assert not efam.auto_rec()
+
+
+def test_xrec():
+
+    efam = EvalFamily(fam)
+    fam.subjects[0].sex = 'female'
+    fam.subjects[1].sex = 'male'
+    fam.subjects[2].sex = 'female'
+    efam.gt_types = [Family.HET, Family.HOM_REF, Family.HOM_ALT]
+    assert efam.x_rec()
+
+    fam.subjects[2].sex = 'male'
+    efam.gt_types = [Family.HET, Family.HOM_REF, Family.HOM_ALT]
+    assert not efam.x_rec()
+
+    fam.subjects[2].sex = 'female'
+    # mom is hom_alt, but not affected
+    efam.gt_types = [Family.HOM_ALT, Family.HOM_REF, Family.HOM_ALT]
+    assert not efam.x_rec()
+
+def test_xdom():
+    efam = EvalFamily(fam)
+    fam.subjects[0].sex = 'female'
+    fam.subjects[1].sex = 'male'
+    fam.subjects[2].sex = 'female'
+    efam.gt_types = [Family.HET, Family.HOM_REF, Family.HOM_ALT]
+    assert not efam.x_dom()
+
+    # mom must be affected.
+    fam.subjects[0].affected = True
+    assert efam.x_dom()
+
+    fam.subjects[0].affected = False
+    fam.subjects[1].affected = True
+    # dad affected, but hom_ref
+    assert not efam.x_dom()
+
+    efam.gt_types = [Family.HOM_REF, Family.HET, Family.HOM_ALT]
+    assert efam.x_dom()
 
 
 def test_auto_rec_kid_unaffected():

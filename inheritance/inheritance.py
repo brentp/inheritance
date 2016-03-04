@@ -241,6 +241,14 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                                ", ".join(repr(s) for s in self.subjects))
 
         @property
+        def males(self):
+            return [s for s in self.subjects if s.sex in ('1', 1, 'male')]
+
+        @property
+        def females(self):
+            return [s for s in self.subjects if s.sex in ('2', 2, 'female')]
+
+        @property
         def affecteds(self):
             return [s for s in self.subjects if s.affected]
 
@@ -351,8 +359,75 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                     sys.stderr.write("WARNING: using affected without parents for family %s for autosomal dominant test. Use strict to prevent this.\n" % self.family_id)
             return combine_and(af, un, depth, quals)
 
+        def x_dom(self, min_depth=0, min_gq=0):
+            """
+            X-linked dominant
+            #. affecteds must be het or hom_alt
+            #. boys of affected dad must be unaffected
+            #. girls of affected mom or dad must be affected
+            #. boys of affected mom must be affected
+            """
+            affecteds = self.affecteds
+            if len(affecteds) == 0:
+                sys.stderr.write("WARNING: no affecteds in family %s\n" % self.family_id)
+                return False
+
+            af = reduce(op.and_, [(s.gt_types == HET) | (s.gt_types == HOM_ALT) for s in affecteds])
+            if len(self.unaffecteds) > 0:
+                un = reduce(op.and_, [s.gt_types == HOM_REF for s in self.unaffecteds])
+            else:
+                un = None
+
+            def is_parent(a, b):
+                if a is None or b is None: return False
+                return a.sample_id == b.sample_id and a.family_id == b.family_id
+
+            for parent in self.affecteds:
+                kids = [k for k in self.subjects if is_parent(parent, k.mom) or is_parent(parent, k.dad)]
+                for kid in kids:
+                    if kid.sex == 'female' and not kid.affected:
+                        sys.stderr.write("unaffected female kid of affected parent in family: %s. not x-linked dominant\n")
+                        return False
+                    if kid.sex == parent.sex == 'male' and kid.affected and not kid.mom.affected:
+                        sys.stderr.write("unaffected male kid of affected dad in family: %s. not x-linked dominant\n")
+                        return False
+                    if kid.sex == 'male' and parent.sex == 'female' and not kid.affected:
+                        sys.stderr.write("unaffected male kid of affected dad in family: %s. not x-linked dominant\n")
+                        return False
+
+            depth = self._restrict_to_min_depth(min_depth)
+            quals = self._restrict_to_min_gq(min_gq)
+            return combine_and(af, un, depth, quals)
+
+        def x_rec(self, min_depth=0, min_gq=0):
+            """
+            X-linked recessive.
+            #. affected females are hom_alt
+            #. unaffected females are het or hom_ref
+            #. all males are hom_ref (issue warning for affected males)
+
+            NOTE: could add something for obligate carriers -- where unaffected females are het
+            """
+            affecteds = self.affecteds
+            if len(affecteds) == 0:
+                sys.stderr.write("WARNING: no affecteds in family %s\n" % self.family_id)
+                return False
+            if any(a.sex == 'male' for a in affecteds):
+                sys.stderr.write("WARNING: running x-linked recessive on family (%s) with affected males\n" % self.family_id)
+
+            female_af = [s.gt_types == HOM_ALT for s in affecteds if s.sex == 'female']
+            if len(female_af) == 0:
+                return False
+
+            female_af = reduce(op.and_, female_af)
+            female_un = reduce(op.and_, [s.gt_types != HOM_ALT for s in self.unaffecteds if s.sex == 'female'])
+            male = reduce(op.and_, [s.gt_types == HOM_REF for s in self.males])
+            depth = self._restrict_to_min_depth(min_depth)
+            quals = self._restrict_to_min_gq(min_gq)
+            return combine_and(female_af, female_un, male, depth, quals)
+
         def auto_rec(self, min_depth=0, gt_ll=False, strict=True,
-                only_affected=True, min_gq=0):
+                     only_affected=True, min_gq=0):
             """
             If strict, then if parents exist, they must be het for all affecteds
             """
