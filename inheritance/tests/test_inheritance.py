@@ -96,6 +96,10 @@ def test_xdom():
     assert not efam.x_dom()
 
     # mom must be affected.
+    fam.subjects[0].affected = False
+    assert not efam.x_dom()
+
+    efam.gt_types[2] = Family.HET
     fam.subjects[0].affected = True
     assert efam.x_dom()
 
@@ -104,8 +108,21 @@ def test_xdom():
     # dad affected, but hom_ref
     assert not efam.x_dom()
 
+
     efam.gt_types = [Family.HOM_REF, Family.HET, Family.HOM_ALT]
+    assert not efam.x_dom()
+
+    fam.subjects[0].sex = 'female'
+    fam.subjects[1].sex = 'male'
+    fam.subjects[2].sex = 'female'
+    efam = EvalFamily(fam)
+    efam.gt_types = [Family.HOM_REF, Family.HOM_ALT, Family.HET]
+    import sys
+    fam.subjects[0].affected = False
+    fam.subjects[1].affected = True
+    fam.subjects[2].affected = True
     assert efam.x_dom()
+
 
 
 def test_auto_rec_kid_unaffected():

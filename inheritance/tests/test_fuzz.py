@@ -31,7 +31,7 @@ def make_fam(n_affecteds, n_unaffecteds, n_unknowns, id="xxx"):
 
 def test_fuzz():
 
-    for i in range(20):
+    for i in range(200):
         n_affecteds, n_unaffecteds, n_unknowns = random.randint(0, 6), random.randint(0, 6), random.randint(0, 3)
         if n_affecteds + n_unaffecteds + n_unknowns == 0: continue
 

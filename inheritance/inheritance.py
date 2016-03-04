@@ -362,17 +362,30 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
         def x_dom(self, min_depth=0, min_gq=0):
             """
             X-linked dominant
-            #. affecteds must be het or hom_alt
+            #. unaffecteds are hom_ref
+            #. affected males must be het (PAR) or hom_alt
+            #. affected females must be het
             #. boys of affected dad must be unaffected
-            #. girls of affected mom or dad must be affected
-            #. boys of affected mom must be affected
+            #. girls of affected dad must be affected
             """
             affecteds = self.affecteds
             if len(affecteds) == 0:
                 sys.stderr.write("WARNING: no affecteds in family %s\n" % self.family_id)
                 return False
 
-            af = reduce(op.and_, [(s.gt_types == HET) | (s.gt_types == HOM_ALT) for s in affecteds])
+            try:
+                # affected males het or hom_alt
+                af = reduce(op.and_, [(s.gt_types == HET) | (s.gt_types == HOM_ALT) for s in affecteds if s.sex == 'male'])
+                # affected females must be het
+                af = reduce(op.and_, [s.gt_types == HET for s in affecteds if s.sex == 'female'], af)
+            except TypeError:
+                # affected females must be het
+                try:
+                    af = reduce(op.and_, [s.gt_types == HET for s in affecteds if s.sex == 'female'])
+                except TypeError:
+                    af = None
+
+            # unaffecteds must be hom_ref
             if len(self.unaffecteds) > 0:
                 un = reduce(op.and_, [s.gt_types == HOM_REF for s in self.unaffecteds])
             else:
@@ -383,16 +396,16 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 return a.sample_id == b.sample_id and a.family_id == b.family_id
 
             for parent in self.affecteds:
-                kids = [k for k in self.subjects if is_parent(parent, k.mom) or is_parent(parent, k.dad)]
+                kids = [k for k in self.subjects if is_parent(parent, k.dad)]
                 for kid in kids:
-                    if kid.sex == 'female' and not kid.affected:
-                        sys.stderr.write("unaffected female kid of affected parent in family: %s. not x-linked dominant\n")
+                    # girls of affected dad must be affected
+                    if kid.sex == 'female' and parent.sex == 'male' and not kid.affected:
+                        sys.stderr.write("unaffected female kid of affected dad in family: %s. not x-linked dominant\n")
                         return False
-                    if kid.sex == parent.sex == 'male' and kid.affected and not kid.mom.affected:
-                        sys.stderr.write("unaffected male kid of affected dad in family: %s. not x-linked dominant\n")
-                        return False
-                    if kid.sex == 'male' and parent.sex == 'female' and not kid.affected:
-                        sys.stderr.write("unaffected male kid of affected dad in family: %s. not x-linked dominant\n")
+
+                    #. boys of affected dad must be unaffected
+                    if kid.sex == 'male' and parent.sex == 'male' and kid.affected:
+                        sys.stderr.write("affected male kid of affected dad in family: %s. not x-linked dominant\n")
                         return False
 
             depth = self._restrict_to_min_depth(min_depth)
@@ -404,7 +417,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             X-linked recessive.
             #. affected females are hom_alt
             #. unaffected females are het or hom_ref
-            #. all males are hom_ref (issue warning for affected males)
+            #. affected males are het or hom_alt (issue warning for het males for PAR)
 
             NOTE: could add something for obligate carriers -- where unaffected females are het
             """
@@ -412,8 +425,6 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             if len(affecteds) == 0:
                 sys.stderr.write("WARNING: no affecteds in family %s\n" % self.family_id)
                 return False
-            if any(a.sex == 'male' for a in affecteds):
-                sys.stderr.write("WARNING: running x-linked recessive on family (%s) with affected males\n" % self.family_id)
 
             female_af = [s.gt_types == HOM_ALT for s in affecteds if s.sex == 'female']
             if len(female_af) == 0:
@@ -421,10 +432,19 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
 
             female_af = reduce(op.and_, female_af)
             female_un = reduce(op.and_, [s.gt_types != HOM_ALT for s in self.unaffecteds if s.sex == 'female'])
-            male = reduce(op.and_, [s.gt_types == HOM_REF for s in self.males])
+
+            try:
+                male_af = reduce(op.and_, [s.gt_types != HOM_REF for s in self.males if s.affected])
+            except TypeError:
+                male_af = None
+            try:
+                male_un = reduce(op.and_, [s.gt_types == HOM_REF for s in self.males if not s.affected])
+            except TypeError:
+                male_un = None
+
             depth = self._restrict_to_min_depth(min_depth)
             quals = self._restrict_to_min_gq(min_gq)
-            return combine_and(female_af, female_un, male, depth, quals)
+            return combine_and(female_af, female_un, male_af, male_un, depth, quals)
 
         def auto_rec(self, min_depth=0, gt_ll=False, strict=True,
                      only_affected=True, min_gq=0):
