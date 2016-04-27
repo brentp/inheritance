@@ -359,6 +359,45 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                     sys.stderr.write("WARNING: using affected without parents for family %s for autosomal dominant test. Use strict to prevent this.\n" % self.family_id)
             return combine_and(af, un, depth, quals)
 
+        def x_denovo(self, min_depth=0, min_gq=0):
+            """
+            #. affected female child must be het
+            #. affected male child must be hom_alt (or het)
+            #. parents should be unaffected and hom_ref
+            """
+            affecteds = self.affecteds
+            if len(affecteds) == 0:
+                sys.stderr.write("WARNING: no affecteds in family %s\n" % self.family_id)
+                return False
+
+            female_af = [s.gt_types == HET for s in affecteds if s.sex == 'female']
+            male_af = [(s.gt_types == HOM_ALT) | (s.gt_types == HET) for s in affecteds if s.sex == 'male']
+
+            try:
+                af = reduce(op.and_, female_af + male_af)
+            except TypeError:
+                assert len([x for x in affecteds if x.sex in ('male', 'female')]) == 0
+                af = None
+
+            un = None
+            for kid in affecteds:
+                if (kid.mom is not None and kid.mom.affected) or (kid.dad is not None and kid.dad.affected):
+                    sys.stderr.write("affected kid with affected parent in family: %s. not x-linked de novo\n" % self.family_id)
+                    return 'False'
+                for parent in (kid.mom, kid.dad):
+                    if parent is None: continue
+                    if un is None:
+                        un = (parent.gt_types == HOM_REF)
+                    else:
+                        un &= (parent.gt_types == HOM_REF)
+
+                if kid.mom is None or kid.dad is None:
+                    sys.stderr.write("warning: running denovo on kid with no parents for family: %s\n" % self.family_id)
+
+            depth = self._restrict_to_min_depth(min_depth)
+            quals = self._restrict_to_min_gq(min_gq)
+            return combine_and(af, un, depth, quals)
+
         def x_dom(self, min_depth=0, min_gq=0):
             """
             X-linked dominant

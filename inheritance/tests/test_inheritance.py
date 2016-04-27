@@ -68,6 +68,22 @@ def test_auto_rec():
     efam.gt_types = [Family.HET, Family.HET, Family.HET]
     assert not efam.auto_rec()
 
+def test_x_denovo():
+
+    efam = EvalFamily(fam)
+    fam.subjects[0].sex = 'female'
+    fam.subjects[1].sex = 'male'
+    fam.subjects[2].sex = 'female'
+    efam.gt_types = [Family.HOM_REF, Family.HOM_REF, Family.HET]
+    assert efam.x_denovo()
+
+
+    efam.gt_types[1] = Family.HET
+    assert not efam.x_denovo()
+
+    efam.gt_types[1] = Family.HOM_REF
+    fam.subjects[2].sex = 'male'
+    assert efam.x_denovo()
 
 def test_xrec():
 

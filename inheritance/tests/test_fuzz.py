@@ -42,6 +42,7 @@ def test_fuzz():
 
                 f.x_rec(min_depth=min_depth, min_gq=min_gq)
                 f.x_dom(min_depth=min_depth, min_gq=min_gq)
+                f.x_denovo(min_depth=min_depth, min_gq=min_gq)
 
                 for only_affected in (True, False):
                     for gt_ll in (False, 0, 10):
