@@ -19,6 +19,7 @@ Supported inheritance tests
 + autosomal dominant
 + autosomal recessive
 + de novo
++ X-linked dominant, recessive, and de novo
 + compound heterozygote
 + mendelian violation
 
