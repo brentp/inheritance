@@ -367,7 +367,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             """
             affecteds = self.affecteds
             if len(affecteds) == 0:
-                sys.stderr.write("WARNING: no affecteds in family %s\n" % self.family_id)
+                sys.stderr.write("WARNING: no affecteds in family %s. skipping\n" % self.family_id)
                 return False
 
             female_af = [s.gt_types == HET for s in affecteds if s.sex == 'female']
@@ -382,7 +382,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             un = None
             for kid in affecteds:
                 if (kid.mom is not None and kid.mom.affected) or (kid.dad is not None and kid.dad.affected):
-                    sys.stderr.write("affected kid with affected parent in family: %s. not x-linked de novo\n" % self.family_id)
+                    sys.stderr.write("warning: affected kid with affected parent in family: %s. not x-linked de novo. skipping\n" % self.family_id)
                     return 'False'
                 for parent in (kid.mom, kid.dad):
                     if parent is None: continue
@@ -409,7 +409,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             """
             affecteds = self.affecteds
             if len(affecteds) == 0:
-                sys.stderr.write("WARNING: no affecteds in family %s\n" % self.family_id)
+                sys.stderr.write("WARNING: no affecteds in family %s. skipping\n" % self.family_id)
                 return False
 
             try:
@@ -439,12 +439,12 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 for kid in kids:
                     # girls of affected dad must be affected
                     if kid.sex == 'female' and parent.sex == 'male' and not kid.affected:
-                        sys.stderr.write("unaffected female kid of affected dad in family: %s. not x-linked dominant\n")
+                        sys.stderr.write("unaffected female kid of affected dad in family: %s. not x-linked dominant. skipping %s\n" % (kid.family_id % parent.sample_id))
                         return False
 
                     #. boys of affected dad must be unaffected
                     if kid.sex == 'male' and parent.sex == 'male' and kid.affected:
-                        sys.stderr.write("affected male kid of affected dad in family: %s. not x-linked dominant\n")
+                        sys.stderr.write("affected male kid of affected dad in family: %s. not x-linked dominant. skipping %s\n" % (kid.family_id % parent.sample_id))
                         return False
 
             depth = self._restrict_to_min_depth(min_depth)
@@ -470,7 +470,10 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 return False
 
             female_af = reduce(op.and_, female_af)
-            female_un = reduce(op.and_, [s.gt_types != HOM_ALT for s in self.unaffecteds if s.sex == 'female'])
+            try:
+                female_un = reduce(op.and_, [s.gt_types != HOM_ALT for s in self.unaffecteds if s.sex == 'female'])
+            except TypeError:
+                female_un = None
 
             try:
                 male_af = reduce(op.and_, [s.gt_types != HOM_REF for s in self.males if s.affected])
