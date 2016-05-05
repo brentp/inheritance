@@ -3,13 +3,17 @@ import random
 
 def make_fam(n_affecteds, n_unaffecteds, n_unknowns, id="xxx"):
 
+
     samples = []
     for i in range(n_affecteds):
-        samples.append(Sample('affected_%d' % i, affected=True))
+        samples.append(Sample('affected_%d' % i, affected=True,
+            sex=random.randint(1, 2)))
     for i in range(n_unaffecteds):
-        samples.append(Sample('unaffected_%d' % i, affected=False))
+        samples.append(Sample('unaffected_%d' % i, affected=False,
+            sex=random.randint(1, 2)))
     for i in range(n_unknowns):
-        samples.append(Sample('unknown_%d' % i, affected=None))
+        samples.append(Sample('unknown_%d' % i, affected=None,
+            sex=random.randint(1, 2)))
 
     for i in range(int((n_affecteds + n_affecteds + n_unknowns)/ 4)):
 
@@ -31,8 +35,8 @@ def make_fam(n_affecteds, n_unaffecteds, n_unknowns, id="xxx"):
 
 def test_fuzz():
 
-    for i in range(200):
-        n_affecteds, n_unaffecteds, n_unknowns = random.randint(0, 6), random.randint(0, 6), random.randint(0, 3)
+    for i in range(2000):
+        n_affecteds, n_unaffecteds, n_unknowns = random.randint(0, 4), random.randint(0, 6), random.randint(0, 3)
         if n_affecteds + n_unaffecteds + n_unknowns == 0: continue
 
         f = make_fam(n_affecteds, n_unaffecteds, n_unknowns, str(i))

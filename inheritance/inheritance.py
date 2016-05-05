@@ -37,12 +37,12 @@ def combine_and(*args):
 def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
     class Sample(object):
 
-        __slots__ = ('sample_id', 'name', 'affected', 'sex', 'gender', 'mom', 'dad',
+        __slots__ = ('sample_id', 'name', 'affected', 'sex', 'mom', 'dad',
                      'family_id', '_i')
 
         valid_gts = None
 
-        def __init__(self, sample_id, affected, gender=None, name=None,
+        def __init__(self, sample_id, affected, sex=None, name=None,
                      family_id=None):
             #assert isinstance(sample_id, (long, int)), sample_id
             assert affected in (True, False, None)
@@ -51,7 +51,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             self.affected = affected
             self.mom = None
             self.dad = None
-            self.sex = self.gender = gender
+            self.sex = sex
             self.family_id = family_id
             # _i is used to maintain the order in which they came in.
             self._i = None
@@ -71,8 +71,8 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             s = "%s(%s" % (c, self.name or self.sample_id)
             s += (";affected" if self.affected else (";unaffected"
                       if self.affected is False else ";unknown"))
-            if self.gender is not None:
-                s += ";%s" % self.gender
+            if self.sex is not None:
+                s += ";%s" % self.sex
             return s + ")"
 
         def __str__(self):
@@ -207,12 +207,12 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
         def _from_gen(klass, gen, order=None):
             fams = defaultdict(dict)
             pheno_lookup = {'1': False, '2': True}
-            gender_lookup = {'1': 'male', '2': 'female'}
+            sex_lookup = {'1': 'male', '2': 'female'}
             for i, (fam_id, indv, pat_id, mat_id, sex, pheno, name) in enumerate(gen):
 
                 assert indv not in fams[fam_id]
                 s = fams[fam_id][name] = Sample(indv, pheno_lookup.get(pheno),
-                                                gender=gender_lookup.get(sex))
+                                                sex=sex_lookup.get(sex))
                 s.mom = mat_id
                 s.dad = pat_id
                 # name in gemini is actually the id from the ped.
@@ -392,7 +392,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                         un &= (parent.gt_types == HOM_REF)
 
                 if kid.mom is None or kid.dad is None:
-                    sys.stderr.write("warning: running denovo on kid with no parents for family: %s\n" % self.family_id)
+                    sys.stderr.write("warning: running x-linked de novo on kid with no parents for family: %s\n" % self.family_id)
 
             depth = self._restrict_to_min_depth(min_depth)
             quals = self._restrict_to_min_gq(min_gq)
