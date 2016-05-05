@@ -439,12 +439,12 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 for kid in kids:
                     # girls of affected dad must be affected
                     if kid.sex == 'female' and parent.sex == 'male' and not kid.affected:
-                        sys.stderr.write("unaffected female kid of affected dad in family: %s. not x-linked dominant. skipping %s\n" % (kid.family_id % parent.sample_id))
+                        sys.stderr.write("unaffected female kid of affected dad in family: %s. not x-linked dominant. skipping %s\n" % (kid.family_id, parent.sample_id))
                         return False
 
                     #. boys of affected dad must be unaffected
                     if kid.sex == 'male' and parent.sex == 'male' and kid.affected:
-                        sys.stderr.write("affected male kid of affected dad in family: %s. not x-linked dominant. skipping %s\n" % (kid.family_id % parent.sample_id))
+                        sys.stderr.write("affected male kid of affected dad in family: %s. not x-linked dominant. skipping %s\n" % (kid.family_id, parent.sample_id))
                         return False
 
             depth = self._restrict_to_min_depth(min_depth)
