@@ -34,6 +34,10 @@ def combine_and(*args):
         cmd = a if i == 0 else cmd & a
     return cmd
 
+sex_lookup = {'1': 'male', '2': 'female',
+               1: 'male', 2: 'female',
+               'male': 'male', 'female': 'female'}
+
 def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
     class Sample(object):
 
@@ -51,7 +55,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             self.affected = affected
             self.mom = None
             self.dad = None
-            self.sex = sex
+            self.sex = sex_lookup.get(sex)
             self.family_id = family_id
             # _i is used to maintain the order in which they came in.
             self._i = None
@@ -207,12 +211,11 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
         def _from_gen(klass, gen, order=None):
             fams = defaultdict(dict)
             pheno_lookup = {'1': False, '2': True}
-            sex_lookup = {'1': 'male', '2': 'female'}
             for i, (fam_id, indv, pat_id, mat_id, sex, pheno, name) in enumerate(gen):
 
                 assert indv not in fams[fam_id]
                 s = fams[fam_id][name] = Sample(indv, pheno_lookup.get(pheno),
-                                                sex=sex_lookup.get(sex))
+                                                sex=sex)
                 s.mom = mat_id
                 s.dad = pat_id
                 # name in gemini is actually the id from the ped.
@@ -382,7 +385,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             un = None
             for kid in affecteds:
                 if (kid.mom is not None and kid.mom.affected) or (kid.dad is not None and kid.dad.affected):
-                    sys.stderr.write("warning: affected kid with affected parent in family: %s. not x-linked de novo. skipping\n" % self.family_id)
+                    sys.stderr.write("WARNING: affected kid with affected parent in family: %s. not x-linked de novo. skipping\n" % self.family_id)
                     return 'False'
                 for parent in (kid.mom, kid.dad):
                     if parent is None: continue
@@ -392,7 +395,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                         un &= (parent.gt_types == HOM_REF)
 
                 if kid.mom is None or kid.dad is None:
-                    sys.stderr.write("warning: running x-linked de novo on kid with no parents for family: %s\n" % self.family_id)
+                    sys.stderr.write("WARNING: running x-linked de novo on kid with no parents for family: %s\n" % self.family_id)
 
             depth = self._restrict_to_min_depth(min_depth)
             quals = self._restrict_to_min_gq(min_gq)
@@ -439,12 +442,14 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 for kid in kids:
                     # girls of affected dad must be affected
                     if kid.sex == 'female' and parent.sex == 'male' and not kid.affected:
-                        sys.stderr.write("unaffected female kid of affected dad in family: %s. not x-linked dominant. skipping %s\n" % (kid.family_id, parent.sample_id))
+                        sys.stderr.write("WARNING: unaffected female kid of affected dad "  +
+                                "in family: %s. not x-linked dominant. skipping %s\n" % (kid.family_id, parent.name))
                         return False
 
                     #. boys of affected dad must be unaffected
                     if kid.sex == 'male' and parent.sex == 'male' and kid.affected:
-                        sys.stderr.write("affected male kid of affected dad in family: %s. not x-linked dominant. skipping %s\n" % (kid.family_id, parent.sample_id))
+                        sys.stderr.write("WARNING: affected male kid of affected dad in " +
+                                "family: %s. not x-linked dominant. skipping %s\n" % (kid.family_id, parent.name))
                         return False
 
             depth = self._restrict_to_min_depth(min_depth)

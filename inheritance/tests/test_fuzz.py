@@ -7,22 +7,27 @@ def make_fam(n_affecteds, n_unaffecteds, n_unknowns, id="xxx"):
     samples = []
     for i in range(n_affecteds):
         samples.append(Sample('affected_%d' % i, affected=True,
-            sex=random.randint(1, 2)))
+            sex=random.randint(1, 2), name='affected_%d' % i))
     for i in range(n_unaffecteds):
         samples.append(Sample('unaffected_%d' % i, affected=False,
-            sex=random.randint(1, 2)))
+            sex=random.randint(1, 2), name='affected_%d' % i))
     for i in range(n_unknowns):
         samples.append(Sample('unknown_%d' % i, affected=None,
-            sex=random.randint(1, 2)))
+            sex=random.randint(1, 2), name='affected_%d' % i))
 
-    for i in range(int((n_affecteds + n_affecteds + n_unknowns)/ 4)):
+    for i in range(int((n_affecteds + n_affecteds + n_unknowns) / 2)):
 
         sample = random.choice(samples)
-        if random.random() < 0.85:
-            sample.dad = random.choice([s for s in samples if not s == sample])
-
-        if random.random() < 0.85:
-            sample.mom = random.choice([s for s in samples if not s == sample])
+        if random.random() < 0.9:
+            try:
+                sample.dad = random.choice([s for s in samples if not s == sample and s.sex == 'male'])
+            except IndexError:
+                pass
+        if random.random() < 0.9:
+            try:
+                sample.mom = random.choice([s for s in samples if not s == sample and s.sex == 'female'])
+            except IndexError:
+                pass
 
     fam = EvalFamily(Family(samples, 'fam_%s' % id))
     fam.gt_types = [random.randrange(0, 4) for _ in range(len(samples))]
@@ -34,8 +39,9 @@ def make_fam(n_affecteds, n_unaffecteds, n_unknowns, id="xxx"):
     return fam
 
 def test_fuzz():
-
-    for i in range(200):
+    import os
+    n = 200 if os.environ.get('CI') else 2000
+    for i in range(n):
         n_affecteds, n_unaffecteds, n_unknowns = random.randint(0, 4), random.randint(0, 6), random.randint(0, 3)
         if n_affecteds + n_unaffecteds + n_unknowns == 0: continue
 
