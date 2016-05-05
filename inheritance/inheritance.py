@@ -465,18 +465,18 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 sys.stderr.write("WARNING: no affecteds in family %s\n" % self.family_id)
                 return False
 
-            female_af = [s.gt_types == HOM_ALT for s in affecteds if s.sex == 'female']
-            if len(female_af) == 0:
-                return False
-
-            female_af = reduce(op.and_, female_af)
             try:
-                female_un = reduce(op.and_, [s.gt_types != HOM_ALT for s in self.unaffecteds if s.sex == 'female'])
+                female_af = [s.gt_types == HOM_ALT for s in affecteds if s.sex == 'female']
+                female_af = reduce(op.and_, female_af)
+            except TypeError:
+                female_af = None
+            try:
+                female_un = reduce(op.and_, [s.gt_types == HET for s in self.unaffecteds if s.sex == 'female'])
             except TypeError:
                 female_un = None
 
             try:
-                male_af = reduce(op.and_, [s.gt_types != HOM_REF for s in self.males if s.affected])
+                male_af = reduce(op.and_, [(s.gt_types != UNKNOWN) & (s.gt_types != HOM_REF) for s in self.males if s.affected])
             except TypeError:
                 male_af = None
             try:
@@ -486,7 +486,8 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
 
             depth = self._restrict_to_min_depth(min_depth)
             quals = self._restrict_to_min_gq(min_gq)
-            return combine_and(female_af, female_un, male_af, male_un, depth, quals)
+            v = combine_and(female_af, female_un, male_af, male_un, depth, quals)
+            return v
 
         def auto_rec(self, min_depth=0, gt_ll=False, strict=True,
                      only_affected=True, min_gq=0):

@@ -96,7 +96,7 @@ def test_xrec():
 
     fam.subjects[2].sex = 'male'
     efam.gt_types = [Family.HET, Family.HOM_REF, Family.HOM_ALT]
-    assert not efam.x_rec()
+    assert efam.x_rec()
 
     fam.subjects[2].sex = 'female'
     # mom is hom_alt, but not affected
