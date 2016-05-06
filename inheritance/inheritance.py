@@ -11,6 +11,8 @@ import itertools as it
 import operator as op
 import re
 
+zip = it.izip
+
 try:
     reduce
 except NameError:
@@ -858,20 +860,26 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             if ref2 is None and alt2 is None:
                 ref2, alt2 = self._get_ref_alt(gt_types2, gt_bases2)
 
+            idxs = set(s._i for s in self.subjects)
+
             self.famphase(gt_types1, gt_phases1, gt_bases1,
                           length_check=False)
             self.famphase(gt_types2, gt_phases2, gt_bases2,
                           length_check=False)
 
-            gt_bases1 = [b.split("|" if p else "/") for b, p in zip(gt_bases1, gt_phases1)]
-            gt_bases2 = [b.split("|" if p else "/") for b, p in zip(gt_bases2, gt_phases2)]
+            # we index by sample._i, but we only need to split for the current
+            # samples so we check if i in idxs.
+            gt_bases1 = [b.split("|" if p else "/") if i in idxs else b for i,
+                    (b, p) in enumerate(zip(gt_bases1, gt_phases1))]
+            gt_bases2 = [b.split("|" if p else "/") if i in idxs else b for i,
+                    (b, p) in enumerate(zip(gt_bases2, gt_phases2))]
 
             # get in (0, 1) format instead of (A, T)
             try:
                 ra = {ref1: 0, alt1: 1, ".": 2}
-                gt_nums1 = [(ra[b[0]], ra[b[1]]) for b in gt_bases1]
+                gt_nums1 = [(ra[b[0]], ra[b[1]]) if i in idxs else None for i, b in enumerate(gt_bases1)]
                 ra = {ref2: 0, alt2: 1, ".": 2}
-                gt_nums2 = [(ra[b[0]], ra[b[1]]) for b in gt_bases2]
+                gt_nums2 = [(ra[b[0]], ra[b[1]]) if i in idxs else None for i, b in enumerate(gt_bases2)]
             except KeyError:
                 sys.stderr.write("can't phase sites with multiple alternate alleles\n")
                 return {'candidate': False}
@@ -884,7 +892,8 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                                                    gt_types2, gt_nums2,
                                                    gt_phases1, gt_phases2)
 
-            for un in self.unaffecteds:
+            unaffecteds = self.unaffecteds
+            for un in unaffecteds:
                 if gt_types2[un._i] == HOM_ALT or gt_types1[un._i] == HOM_ALT:
                     return {'candidate': False}
 
@@ -920,7 +929,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             del aff
             if ret['candidates'] != []:
 
-                for un in self.unaffecteds:
+                for un in unaffecteds:
                     if gt_types1[un._i] != HET or gt_types2[un._i] != HET:
                         continue
 
