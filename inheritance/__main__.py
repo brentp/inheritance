@@ -86,7 +86,8 @@ def run(inheritance_model, ped, vcf, min_depth, min_gq, min_kindreds, severity):
                 # in inheritance model
                 res = getattr(fam, inheritance_model)(min_depth=min_depth, min_gq=min_gq)
 
-                if res:
+                # matched the inheritance model.
+                if res: # can add custom logic here, e.g. and v.call_rate > 0.9:
                     matching_fams[i].append(family_id)
                     uniq_fams.append(family_id)
 
