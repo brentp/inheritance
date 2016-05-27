@@ -213,7 +213,8 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
         def _from_gen(klass, gen, order=None):
             fams = defaultdict(dict)
             pheno_lookup = {'1': False, '2': True}
-            for i, (fam_id, indv, pat_id, mat_id, sex, pheno, name) in enumerate(gen):
+            for i, line in enumerate(gen):
+                (fam_id, indv, pat_id, mat_id, sex, pheno, name) = line[:7]
 
                 assert indv not in fams[fam_id]
                 s = fams[fam_id][name] = Sample(indv, pheno_lookup.get(pheno),
