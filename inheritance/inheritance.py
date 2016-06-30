@@ -11,7 +11,6 @@ import itertools as it
 import operator as op
 import re
 
-zip = it.izip
 
 try:
     reduce
@@ -20,6 +19,7 @@ except NameError:
 
 try:
     basestring
+    zip = it.izip
 except NameError:
     basestring = str
     unicode = str
