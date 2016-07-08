@@ -314,3 +314,32 @@ def test_comp_het_all_hets():
 
     assert res['candidate']
     assert res['priority'] == 3
+
+
+def test_comp_het_one_parent():
+    mom._i = 0
+    kid._i = 1
+    efam = EvalFamily(Family([mom, kid], 'pair_mom'))
+    efam.gt_types = [Family.HET] * 2
+    res = efam.comp_het_pair([Family.HET] * 2, ["A/C"] * 2,
+                             [Family.HET] * 2, ["A/C"] * 2,
+                             [False] * 2, [False] * 2,
+                             "A", "C", "A", "C")
+    assert res['candidate']
+    assert res['priority'] == 3, res['priority']
+
+    res = efam.comp_het_pair([Family.HOM_REF, Family.HET] * 2, ["A/A", "A/C"],
+                             [Family.HET, Family.HET], ["A/C"] * 2,
+                             [False] * 2, [False] * 2,
+                             "A", "C", "A", "C")
+    assert res['candidate']
+    assert res['priority'] == 2, res['priority']
+
+
+    res = efam.comp_het_pair([Family.HOM_REF, Family.HOM_REF] * 2, ["A/A", "A/A"],
+                             [Family.HET, Family.HET], ["A/C"] * 2,
+                             [False] * 2, [False] * 2,
+                             "A", "C", "A", "C")
+    assert not res['candidate']
+
+
