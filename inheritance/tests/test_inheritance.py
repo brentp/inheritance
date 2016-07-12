@@ -1,4 +1,5 @@
-
+from __future__ import print_function
+import sys
 from inheritance import Sample, Family, EvalFamily
 
 
@@ -342,4 +343,28 @@ def test_comp_het_one_parent():
                              "A", "C", "A", "C")
     assert not res['candidate']
 
+kid2 = Sample('kid2', affected=True, sex='female')
 
+def test_comp_het_one_parent_2kids():
+    """
+    test that we cant have a candidate when a parent is HOM_REF at both sites.
+    """
+    mom._i = 0
+    kid._i = 1
+    kid2._i = 2
+    kid.dad = None
+    kid.mom = None
+    kid.mom = mom
+    efam = EvalFamily(Family([mom, kid, kid2], '2kids'))
+    efam.gt_types = [Family.HOM_REF, Family.HET, Family.HET]
+
+    res = efam.comp_het_pair(
+            [Family.HOM_REF, Family.HET, Family.HET],
+            ["T/T", "T/C", "T/C"],
+            [Family.HOM_REF, Family.HET, Family.HET],
+            ["A/A", "A/C", "A/C"],
+            [False] * 3,
+            [False] * 3,
+             "T", "C", "A", "C", fast_mode=False, allow_unaffected=True)
+
+    assert not res['candidate'], res

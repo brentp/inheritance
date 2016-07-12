@@ -924,6 +924,16 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 if aff_phased:
                     ret['affected_phased'].append(aff)
                 else:
+
+                    # we have to check that the parent is not HOM_REF at both
+                    # sites or HOM_ALT at both sites.
+                    for parent in (aff.mom, aff.dad):
+                        if parent is None: continue
+                        if gt_types1[parent._i] == gt_types2[parent._i] and gt_types1[parent._i] != HET:
+                            ret['candidate'] = False
+                            ret['non-het-parent'] = True
+
+
                     ret['affected_unphased'].append(aff)
                 ret['candidates'].append(aff)
 
