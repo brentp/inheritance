@@ -39,7 +39,7 @@ def make_fam2():
 
 def test_sex():
     import sys
-    f = make_fam1().values()[0]
+    f = next(iter(make_fam1().values()))
     assert [s.sample_id for s in f.males] == ['dad', 'kid', 'kid2', 'grandpa'], f.males
     assert [s.sample_id for s in f.females] == ['mom', 'grandma'], f.males
 
