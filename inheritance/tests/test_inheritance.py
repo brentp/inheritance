@@ -320,6 +320,8 @@ def test_comp_het_all_hets():
 def test_comp_het_one_parent():
     mom._i = 0
     kid._i = 1
+    kid.dad = None
+    kid.mom = None
     efam = EvalFamily(Family([mom, kid], 'pair_mom'))
     efam.gt_types = [Family.HET] * 2
     res = efam.comp_het_pair([Family.HET] * 2, ["A/C"] * 2,
@@ -368,3 +370,30 @@ def test_comp_het_one_parent_2kids():
              "T", "C", "A", "C", fast_mode=False, allow_unaffected=True)
 
     assert not res['candidate'], res
+
+
+def test_x_dom_parents():
+
+    mom = Sample('mom', affected=False, sex='female')
+    dad = Sample('dad', affected=False, sex='male')
+    kid = Sample('kid', affected=True, sex='female')
+
+    kid.mom, kid.dad = mom, dad
+
+    efam = EvalFamily(Family([dad, mom, kid], 'trio'))
+    efam.gt_types = [Family.HOM_REF, Family.HOM_REF, Family.HET]
+
+    # neither parent is het
+    assert not efam.x_dom()
+
+    # neither parent is affected
+    efam.gt_types = [Family.HET, Family.HOM_REF, Family.HET]
+    assert not efam.x_dom()
+
+    dad.affected = True
+    assert efam.x_dom()
+
+
+    # for male, only mom must be affected
+    kid.sex = 'male'
+    assert not efam.x_dom()
