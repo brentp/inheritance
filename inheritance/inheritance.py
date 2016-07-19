@@ -11,6 +11,11 @@ import itertools as it
 import operator as op
 import re
 
+def warn(msg):
+    if os.environ.get('GEMINI_WARN_OFF', '__X') == '__X':
+        sys.stderr.write(msg)
+        if not msg.endswith("\n"):
+            sys.stderr.write(msg)
 
 try:
     reduce
@@ -146,18 +151,18 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 # can't phase kid with de-novo
 
                 if kid_bases - parent_bases:
-                    sys.stderr.write("not phasing variant due to apparent de_novo in kid (%s) in family %s\n"
+                    warn("not phasing variant due to apparent de_novo in kid (%s) in family %s\n"
                                      % (s.name, self.family_id))
                     continue
 
                 # no alleles from dad
                 if len(kid_bases - set(dad_bases)) == len(kid_bases):
-                    sys.stderr.write("not phasing variant due to no alleles in %s from dad %s (apparent mendelian error) in family %s\n"
+                    warn("not phasing variant due to no alleles in %s from dad %s (apparent mendelian error) in family %s\n"
                                       % (s.name, s.dad.name, self.family_id))
                     continue
 
                 if len(kid_bases - set(mom_bases)) == len(kid_bases):
-                    sys.stderr.write("not phasing variant due to no alleles in %s from mom %s (apparent mendelian error) in family %s\n"
+                    warn("not phasing variant due to no alleles in %s from mom %s (apparent mendelian error) in family %s\n"
                                      % (s.name, s.mom.name, self.family_id))
                     continue
 
@@ -320,7 +325,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             Parents of affected can't have unknown phenotype (for at least 1 kid)
             """
             if len(self.affecteds) == 0:
-                sys.stderr.write("WARNING: no affecteds in family %s\n" % self.family_id)
+                warn("WARNING: no affecteds in family %s\n" % self.family_id)
                 if strict:
                     return 'False'
             af = reduce(op.and_, [s.gt_types == HET for s in self.affecteds]) if len(self.affecteds) else True
@@ -362,7 +367,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
 
             if not kid_with_parents:
                 if len(self.affecteds) > 0:
-                    sys.stderr.write("WARNING: using affected without parents for family %s for autosomal dominant test. Use strict to prevent this.\n" % self.family_id)
+                    warn("WARNING: using affected without parents for family %s for autosomal dominant test. Use strict to prevent this.\n" % self.family_id)
             return combine_and(af, un, depth, quals)
 
         def x_denovo(self, min_depth=0, min_gq=0):
@@ -373,7 +378,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             """
             affecteds = self.affecteds
             if len(affecteds) == 0:
-                sys.stderr.write("WARNING: no affecteds in family %s. skipping\n" % self.family_id)
+                warn("WARNING: no affecteds in family %s. skipping\n" % self.family_id)
                 return False
 
             female_af = [s.gt_types == HET for s in affecteds if s.sex == 'female']
@@ -388,7 +393,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             un = None
             for kid in affecteds:
                 if (kid.mom is not None and kid.mom.affected) or (kid.dad is not None and kid.dad.affected):
-                    sys.stderr.write("WARNING: affected kid with affected parent in family: %s. not x-linked de novo. skipping\n" % self.family_id)
+                    warn("WARNING: affected kid with affected parent in family: %s. not x-linked de novo. skipping\n" % self.family_id)
                     return 'False'
                 for parent in (kid.mom, kid.dad):
                     if parent is None: continue
@@ -398,7 +403,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                         un &= (parent.gt_types == HOM_REF)
 
                 if kid.mom is None or kid.dad is None:
-                    sys.stderr.write("WARNING: running x-linked de novo on kid with no parents for family: %s\n" % self.family_id)
+                    warn("WARNING: running x-linked de novo on kid with no parents for family: %s\n" % self.family_id)
 
             depth = self._restrict_to_min_depth(min_depth)
             quals = self._restrict_to_min_gq(min_gq)
@@ -418,7 +423,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             """
             affecteds = self.affecteds
             if len(affecteds) == 0:
-                sys.stderr.write("WARNING: no affecteds in family %s. skipping\n" % self.family_id)
+                warn("WARNING: no affecteds in family %s. skipping\n" % self.family_id)
                 return False
 
             try:
@@ -448,13 +453,13 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 for kid in kids:
                     # girls of affected dad must be affected
                     if kid.sex == 'female' and parent.sex == 'male' and not kid.affected:
-                        sys.stderr.write("WARNING: unaffected female kid of affected dad "  +
+                        warn("WARNING: unaffected female kid of affected dad "  +
                                 "in family: %s. not x-linked dominant. skipping %s\n" % (kid.family_id, parent.name))
                         return False
 
                     #. boys of affected dad must be unaffected
                     if kid.sex == 'male' and parent.sex == 'male' and kid.affected:
-                        sys.stderr.write("WARNING: affected male kid of affected dad in " +
+                        warn("WARNING: affected male kid of affected dad in " +
                                 "family: %s. not x-linked dominant. skipping %s\n" % (kid.family_id, parent.name))
                         return False
 
@@ -483,7 +488,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             """
             affecteds = self.affecteds
             if len(affecteds) == 0:
-                sys.stderr.write("WARNING: no affecteds in family %s\n" % self.family_id)
+                warn("WARNING: no affecteds in family %s\n" % self.family_id)
                 return False
 
             try:
@@ -516,7 +521,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             If strict, then if parents exist, they must be het for all affecteds
             """
             if len(self.affecteds) == 0:
-                sys.stderr.write("WARNING: no affecteds in family %s\n" % self.family_id)
+                warn("WARNING: no affecteds in family %s\n" % self.family_id)
                 return False
             af = reduce(op.and_, [s.gt_types == HOM_ALT for s in self.affecteds])
             if only_affected and len(self.unaffecteds) != 0:
@@ -533,11 +538,11 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                         if parent is not None:
                             af &= parent.gt_types == HET
                             if parent.affected:
-                                sys.stderr.write("WARNING: auto-recessive called on family "
+                                warn("WARNING: auto-recessive called on family "
                                         "%s where affected has affected parents\n" % self.family_id)
                                 return "False"
                     if not usable_kid:
-                        sys.stderr.write("WARNING: auto-recessive called on family "
+                        warn("WARNING: auto-recessive called on family "
                                 "%s where no affected has parents\n" % self.family_id)
 
             depth = self._restrict_to_min_depth(min_depth)
@@ -560,7 +565,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
 
             """
             if len(self.affecteds) == 0:
-                sys.stderr.write("WARNING: no affecteds in family %s\n" % self.family_id)
+                warn("WARNING: no affecteds in family %s\n" % self.family_id)
                 return 'False'
             af = reduce(op.and_, [s.gt_types == HET for s in self.affecteds])
             un = True
@@ -895,7 +900,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 ra = {ref2: 0, alt2: 1, ".": 2}
                 gt_nums2 = [(ra[b[0]], ra[b[1]]) if i in idxs else None for i, b in enumerate(gt_bases2)]
             except KeyError:
-                sys.stderr.write("can't phase sites with multiple alternate alleles\n")
+                warn("can't phase sites with multiple alternate alleles\n")
                 return {'candidate': False}
             except IndexError:
                 # alternate is unknown, e.g. "A/."
