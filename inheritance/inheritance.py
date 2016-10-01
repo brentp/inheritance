@@ -497,7 +497,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             except TypeError:
                 female_af = None
             try:
-                female_un = reduce(op.and_, [s.gt_types == HET for s in self.unaffecteds if s.sex == 'female'])
+                female_un = reduce(op.and_, [((s.gt_types == HET) | (s.gt_types == HOM_REF)) for s in self.unaffecteds if s.sex == 'female'])
             except TypeError:
                 female_un = None
 
@@ -506,7 +506,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             except TypeError:
                 male_af = None
             try:
-                male_un = reduce(op.and_, [s.gt_types == HOM_REF for s in self.males if not s.affected])
+                male_un = reduce(op.and_, [(s.gt_types == HOM_REF) for s in self.males if not s.affected])
             except TypeError:
                 male_un = None
 

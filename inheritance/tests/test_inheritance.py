@@ -397,3 +397,17 @@ def test_x_dom_parents():
     # for male, only mom must be affected
     kid.sex = 'male'
     assert not efam.x_dom()
+
+def test_x_rec():
+
+    mom = Sample('mom_1239NIH', affected=False, sex='female')
+    dad = Sample('dad_1240NIH', affected=False, sex='male')
+    kid_aff = Sample('kidaff_1238NIH', affected=True, sex='female')
+
+    kid_aff.mom = mom
+    kid_aff.dad = dad
+
+    efam = EvalFamily(Family([dad, mom, kid_aff], 'oler-trio'))
+    # mom should be a carrier
+    efam.gt_types = [Family.HOM_REF, Family.HOM_REF, Family.HOM_ALT]
+    assert efam.x_rec()
