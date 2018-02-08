@@ -346,6 +346,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             kid_with_known_parents = False
             # all affected kids must have at least 1 affected parent (or no parents)
             kid_with_parents = False
+            count_missing = 0
             for kid in self.affecteds:
                 # if they have no parents, don't require it
                 if kid.mom is None and kid.dad is None:
@@ -360,10 +361,15 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                         kid_with_known_parents = True
                     # if he has a mom and dad that arent unknown, at least one of them must be affected
                     if not None in (kid.mom.affected, kid.dad.affected):
-                        if not (kid.mom.affected or kid.dad.affected): return 'False'
+                        if not strict:
+                            count_missing += 1
+                        elif not (kid.mom.affected or kid.dad.affected): return 'False'
 
             if strict and not kid_with_known_parents:
                 return 'False'
+
+            if count_missing > len(self.affecteds) - 1:
+                return False
 
             if not kid_with_parents:
                 if len(self.affecteds) > 0:
