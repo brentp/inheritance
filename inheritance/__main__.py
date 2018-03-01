@@ -38,7 +38,7 @@ def run(inheritance_model, ped, vcf, min_depth, min_gq, min_kindreds, severity):
     if "ANN" in vcf:
         desc = vcf["ANN"]["Description"]
         parts = [x.strip("\"'") for x in re.split("\s*\|\s*", desc.split(":", 1)[1].strip('" '))]
-        annos["ANN"] = desc
+        annos["ANN"] = parts
     if "EFF" in vcf:
         desc = vcf["EFF"]["Description"]
         parts = [x.strip(" [])'(\"") for x in re.split("\||\(", desc.split(":", 1)[1].strip())]
@@ -58,7 +58,10 @@ def run(inheritance_model, ped, vcf, min_depth, min_gq, min_kindreds, severity):
 
     def get_gene(variant):
         for anno in annos:
-            consequences = variant.INFO[anno].split(",")
+            curr_anno = variant.INFO.get(anno)
+            if curr_anno is None:
+                continue
+            consequences = curr_anno.split(",")
             effs = (Effect.new(anno, c, annos[anno]) for c in consequences)
             # limit to requested severity
             if severity is not None:
@@ -99,7 +102,7 @@ def run(inheritance_model, ped, vcf, min_depth, min_gq, min_kindreds, severity):
                 pass
             for i, family_ids in sorted(matching_fams.items()):
                 variant = saved_vars[i]
-                variant.INFO["inheritance"] = "%s:%s" % (gene, ",".join(set(family_ids)))
+                variant.INFO["inheritance"] = "%s:%s" % (gene or 'Intergenic', ",".join(set(family_ids)))
 
                 out.write_record(variant)
 
