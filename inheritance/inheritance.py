@@ -119,7 +119,10 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             def agen():
                 for toks in (l.rstrip().split() for l in fh if l[0] != "#"):
                     toks[1] = fix_sample_name(toks[1])
-                    toks.append(toks[1]) # name
+                    toks[2] = fix_sample_name(toks[2])
+                    toks[3] = fix_sample_name(toks[3])
+                    #toks.append(toks[1]) # name
+                    toks = toks[:6] + [toks[1]] # add name to end
                     yield toks
             return klass._from_gen(agen(), order=order)
 
@@ -541,9 +544,9 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                                 warn("WARNING: auto-recessive called on family "
                                         "%s where affected has affected parents\n" % self.family_id)
                                 return "False"
-                    if not usable_kid:
-                        warn("WARNING: auto-recessive called on family "
-                                "%s where no affected has parents\n" % self.family_id)
+                if not usable_kid:
+                    warn("WARNING: auto-recessive called on family "
+                            "%s where no affected has parents\n" % self.family_id)
 
             depth = self._restrict_to_min_depth(min_depth)
             quals = self._restrict_to_min_gq(min_gq)
