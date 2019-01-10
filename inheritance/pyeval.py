@@ -200,6 +200,8 @@ class Filter(object):
     def __and__(self, other):
         raise Exception("shouldn't be here. wrap &/| statements in parens")
 
+
+
     __or__ = __and__
 
     def __nonzero__(self):
@@ -225,6 +227,9 @@ class ostr(str):
         if other is True: return True
         if other is False: return False
         return ostr("%s or %s" % (_bracket(self), _bracket(other)))
+
+    def __invert__(self):
+        return ostr("not %s" % _bracket(self))
 
     def __nonzero__(self):
         raise Exception("shouldn't be here. use & instead of 'and'. and wrap in parens")

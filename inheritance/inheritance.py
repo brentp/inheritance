@@ -485,7 +485,8 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             X-linked recessive.
             #. affected females are hom_alt
             #. unaffected females are het or hom_ref
-            #. affected males are het or hom_alt (issue warning for het males for PAR)
+            #. affected males are hom_alt (issue warning for het males for PAR)
+            #. exclude sites where male is het and parents are hom-ref
 
             NOTE: could add something for obligate carriers -- where unaffected females are het
             """
@@ -512,6 +513,12 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 male_un = reduce(op.and_, [(s.gt_types == HOM_REF) for s in self.males if not s.affected])
             except TypeError:
                 male_un = None
+
+            for kid in affecteds:
+                if kid.sex != 'male': continue
+                # an affected, het male can't have both parents as hom-ref. see: arq5x/gemini#903
+                if not (kid.mom and kid.dad): continue
+                male_af &= ~((kid.gt_types == HET) & ((kid.mom.gt_types == HOM_REF) & (kid.dad.gt_types == HOM_REF)))
 
             depth = self._restrict_to_min_depth(min_depth)
             quals = self._restrict_to_min_gq(min_gq)

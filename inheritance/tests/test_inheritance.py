@@ -35,7 +35,27 @@ def make_fam2():
 1   grandpa 0   0     1  1""")
     return fam
 
+def test_xrec_with_het_male_and_unaffected_parents():
+    mom = Sample('mom', affected=False)
+    dad = Sample('dad', affected=False)
+    kid = Sample('kid', sex='male', affected=True)
+    kid.mom = mom
+    kid.dad = dad
+    fam = Family([kid,dad,mom], "xrec")
+    efam = EvalFamily(fam)
+    efam.gt_types = [Family.HET, Family.HOM_REF, Family.HOM_REF]
+    assert not efam.x_rec()
 
+def test_xrec_with_hom_alt_female_and_unaffected_parents():
+    mom = Sample('mom', affected=False)
+    dad = Sample('dad', affected=False)
+    kid = Sample('kid', sex='female', affected=True)
+    kid.mom = mom
+    kid.dad = dad
+    fam = Family([kid,dad,mom], "xrec")
+    efam = EvalFamily(fam)
+    efam.gt_types = [Family.HOM_ALT, Family.HOM_REF, Family.HOM_REF]
+    assert efam.x_rec()
 
 def test_sex():
     import sys
