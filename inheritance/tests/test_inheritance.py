@@ -57,6 +57,19 @@ def test_xrec_with_hom_alt_female_and_unaffected_parents():
     efam.gt_types = [Family.HOM_ALT, Family.HOM_REF, Family.HOM_REF]
     assert efam.x_rec()
 
+def test_x_denovo_with_missing_parent():
+    """ can't be x DN if parent is missing"""
+    mom = Sample('mom', affected=False)
+    dad = Sample('dad', affected=False)
+    kid = Sample('kid', sex='male', affected=True)
+    #kid.mom = mom
+    kid.dad = dad
+    fam = Family([kid,dad], "xdn")
+    efam = EvalFamily(fam)
+    efam.gt_types = [Family.HOM_ALT, Family.HOM_REF]
+    assert not efam.x_denovo()
+
+
 def test_sex():
     import sys
     f = next(iter(make_fam1().values()))

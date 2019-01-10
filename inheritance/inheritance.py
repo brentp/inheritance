@@ -378,8 +378,9 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             #. affected female child must be het
             #. affected male child must be hom_alt (or het)
             #. parents should be unaffected and hom_ref
+            #. both parents must be present.
             """
-            affecteds = self.affecteds
+            affecteds = [x for x in self.affecteds if x.mom is not None and x.dad is not None]
             if len(affecteds) == 0:
                 warn("WARNING: no affecteds in family %s. skipping\n" % self.family_id)
                 return False
