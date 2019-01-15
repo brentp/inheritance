@@ -305,6 +305,23 @@ def test_comphet_with_denovo():
     assert res['unaffected_phased'] == []
     assert len(res['affected_dn']) == 1
 
+def test_inherited_denovo():
+  kid = Sample('kid', sex='female', affected=True)
+  mom = Sample('mom', sex='female', affected=True)
+  dad = Sample('dad', sex='male', affected=False)
+  gma = Sample('gma', sex='female', affected=False)
+  gpa = Sample('gpa', sex='male', affected=False)
+  kid.mom = mom
+  kid.dad = dad
+  mom.mom = gma
+  mom.dad = gpa
+
+  fam = Family([kid, mom, dad, gma, gpa], "inherited_denovo")
+  efam = EvalFamily(fam)
+  efam.gt_types = [Family.HET, Family.HET, Family.HOM_REF, Family.HOM_REF, Family.HOM_REF]
+
+  assert efam.de_novo()
+  assert efam.de_novo(strict=False)
 
 def test_comphet_with_denovo_and_unsib():
     mom = Sample('mom', affected=False)

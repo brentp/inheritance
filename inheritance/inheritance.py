@@ -604,8 +604,9 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 # can't have a parent with the variant
                 for parent in (kid.mom, kid.dad):
                     if parent is None: continue
+                    if parent.affected: continue
                     un = ((parent.gt_types == HOM_REF) | (parent.gt_types == HOM_ALT)) & un
-                if kid.mom and kid.dad:
+                if kid.mom and kid.dad and not (kid.mom.affected or kid.dad.affected):
                     # otherwise, they could be HOM_REF, HOM_ALT and a het kid is not
                     # de_novo
                     un = (kid.mom.gt_types == kid.dad.gt_types) & un
@@ -617,11 +618,15 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
             quals = self._restrict_to_min_gq(min_gq)
             if strict:
                 # if a parent is affected it's not de novo.
+                any_with_un = False
                 for kid in self.affecteds:
                     for parent in (kid.mom, kid.dad):
-                        if parent is not None and parent.affected:
-                            return 'False'
-            return combine_and(af, un, depth, quals)
+                        if parent is not None and parent.affected is False:
+                            any_with_un = True
+                if not any_with_un:
+                    return 'False'
+            res = combine_and(af, un, depth, quals)
+            return res
 
         def mendel_plausible_denovo(self, min_depth=0, gt_ll=False,
                 only_affected=False, min_gq=0):
