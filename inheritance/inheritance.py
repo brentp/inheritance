@@ -959,26 +959,30 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 if aff_phased:
                     ret['affected_phased'].append(aff)
 
-                elif gt_phases1[aff._i] or gt_phases2[aff._i]: # one phased and one denovo
-                    # 2nd allele is unphased, check for DN.
-                    # NOTE! if any other sample is HET at the DN site, it is
-                    # not considered as a candidate.
-                    if not gt_phases2[aff._i] and gt_types2[aff.mom._i] == HOM_REF and gt_types2[aff.dad._i] == HOM_REF and sum(gt_types2[u._i] in (HET, HOM_ALT) for u in unaffecteds) == 0:
-                      ret['affected_dn'].append(aff)
-                    # 1st allele is unphased, check for DN.
-                    if not gt_phases1[aff._i] and gt_types1[aff.mom._i] == HOM_REF and gt_types1[aff.dad._i] == HOM_REF and sum(gt_types1[u._i] in (HET, HOM_ALT) for u in unaffecteds) == 0:
-                      ret['affected_dn'].append(aff)
                 else:
+                    dn = False
+                    if gt_phases1[aff._i] or gt_phases2[aff._i]: # one phased and one denovo
+                        # 2nd allele is unphased, check for DN.
+                        # NOTE! if any other sample is HET at the DN site, it is
+                        # not considered as a candidate.
+                        if not gt_phases2[aff._i] and gt_types2[aff.mom._i] == HOM_REF and gt_types2[aff.dad._i] == HOM_REF and sum(gt_types2[u._i] in (HET, HOM_ALT) for u in unaffecteds) == 0:
+                            dn = True
+                            ret['affected_dn'].append(aff)
+                        # 1st allele is unphased, check for DN.
+                        elif not gt_phases1[aff._i] and gt_types1[aff.mom._i] == HOM_REF and gt_types1[aff.dad._i] == HOM_REF and sum(gt_types1[u._i] in (HET, HOM_ALT) for u in unaffecteds) == 0:
+                            dn = True
+                            ret['affected_dn'].append(aff)
+
                     # we have to check that the parent is not HOM_REF at both
                     # sites or HOM_ALT at both sites.
-                    for parent in (aff.mom, aff.dad):
-                        if parent is None: continue
-                        if gt_types1[parent._i] == gt_types2[parent._i] and gt_types1[parent._i] != HET:
-                            ret['candidate'] = False
-                            ret['non-het-parent'] = True
+                    if not dn:
+                      for parent in (aff.mom, aff.dad):
+                          if parent is None: continue
+                          if gt_types1[parent._i] == gt_types2[parent._i] and gt_types1[parent._i] != HET:
+                              ret['candidate'] = False
+                              ret['non-het-parent'] = True
 
-
-                    ret['affected_unphased'].append(aff)
+                      ret['affected_unphased'].append(aff)
                 ret['candidates'].append(aff)
 
             del aff
