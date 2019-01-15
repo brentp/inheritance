@@ -279,6 +279,62 @@ def test_comphet_pair():
     res = efam.comp_het()
     assert not res
 
+def test_comphet_with_denovo():
+    mom = Sample('mom', affected=False)
+    dad = Sample('dad', affected=False)
+    kid = Sample('kid', sex='male', affected=True)
+
+    kid.mom = mom
+    kid.dad = dad
+    fam = Family([dad,mom, kid], "comphet_dn")
+    efam = EvalFamily(fam)
+
+    assert [f.affected for f in efam.subjects] == [False, False, True]
+    # inherited HET
+    gt_types1 = [Family.HET, Family.HOM_REF, Family.HET]
+    gt_bases1 = ["A/C", "A/A", "A/C"]
+    # DN
+    gt_types2 = [Family.HOM_REF, Family.HOM_REF, Family.HET]
+    gt_bases2 = ["T/T", "T/T", "T/C"]
+    efam.gt_types = gt_types1
+
+    res = efam.comp_het_pair(gt_types1, gt_bases1, gt_types2, gt_bases2)
+
+    assert res['candidate']
+    assert res['affected_phased'] == []
+    assert res['unaffected_phased'] == []
+    assert len(res['affected_dn']) == 1
+
+
+def test_comphet_with_denovo_and_unsib():
+    mom = Sample('mom', affected=False)
+    dad = Sample('dad', affected=False)
+    kid = Sample('kid', sex='male', affected=True)
+    sib = Sample('sib', sex='male', affected=False)
+
+    kid.mom = mom
+    kid.dad = dad
+    sib.mom = mom
+    sib.dad = dad
+    fam = Family([dad,mom, kid, sib], "comphet_dn")
+    efam = EvalFamily(fam)
+
+    assert [f.affected for f in efam.subjects] == [False, False, True, False]
+    # inherited HET
+    gt_types1 = [Family.HET, Family.HOM_REF, Family.HET, Family.HOM_REF]
+    gt_bases1 = ["A/C", "A/A", "A/C", "A/A"]
+    # DN
+    gt_types2 = [Family.HOM_REF, Family.HOM_REF, Family.HET, Family.HET]
+    gt_bases2 = ["T/T", "T/T", "T/C", "T/C"]
+    efam.gt_types = gt_types1
+
+    res = efam.comp_het_pair(gt_types1, gt_bases1, gt_types2, gt_bases2)
+
+    assert res['candidate']
+    assert res['affected_phased'] == []
+    assert res['unaffected_phased'] == []
+    assert len(res['affected_dn']) == 0
+
 def test_comphet_pattern():
     fam = make_fam2()
     efam = EvalFamily(fam)

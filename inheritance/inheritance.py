@@ -929,6 +929,7 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
 
             ret = {'affected_phased': [], 'unaffected_phased': [],
                    'unaffected_unphased': [], 'affected_unphased': [],
+                   'affected_dn': [],
                    'affected_skipped': [], 'candidates': []}
 
             aff = None
@@ -952,8 +953,17 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 if not 'candidate' in ret: ret['candidate'] = True
                 if aff_phased:
                     ret['affected_phased'].append(aff)
-                else:
 
+                elif gt_phases1[aff._i] or gt_phases2[aff._i]: # one phased and one denovo
+                    # 2nd allele is unphased, check for DN.
+                    # NOTE! if any other sample is HET at the DN site, it is
+                    # not considered as a candidate.
+                    if not gt_phases2[aff._i] and gt_types2[aff.mom._i] == HOM_REF and gt_types2[aff.dad._i] == HOM_REF and sum(gt_types2[u._i] in (HET, HOM_ALT) for u in unaffecteds) == 0:
+                      ret['affected_dn'].append(aff)
+                    # 1st allele is unphased, check for DN.
+                    if not gt_phases1[aff._i] and gt_types1[aff.mom._i] == HOM_REF and gt_types1[aff.dad._i] == HOM_REF and sum(gt_types1[u._i] in (HET, HOM_ALT) for u in unaffecteds) == 0:
+                      ret['affected_dn'].append(aff)
+                else:
                     # we have to check that the parent is not HOM_REF at both
                     # sites or HOM_ALT at both sites.
                     for parent in (aff.mom, aff.dad):
@@ -994,6 +1004,9 @@ def make_classes(valid_gts, cfilter, HOM_REF, HET, UNKNOWN, HOM_ALT):
                 ret['priority'] = 3
                 if len(ret['affected_phased']) and len(ret['unaffected_unphased']) == 0:
                     ret['priority'] = 1
+
+                if len(ret['affected_dn']) and len(ret['unaffected_unphased']) == 0:
+                    ret['priority'] = 1.5
                     # priority 2 for a single unphased affected.
                 elif len(ret['affected_unphased']) and len(ret['unaffected_unphased']) == 0:
                     ret['priority'] = 2
